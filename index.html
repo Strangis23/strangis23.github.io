@@ -4,12 +4,80 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Tetris Tower Defense</title>
-<link rel="stylesheet" href="styles.css?v=18" />
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="styles.css?v=24" />
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6914309383865227"
      crossorigin="anonymous"></script>
 </head>
 <body>
 <div id="app-shell">
+<div id="title-screen">
+  <div class="title-screen-panel">
+    <header class="title-header">
+      <p class="title-kicker">Deck-builder tower defense</p>
+      <h1 class="title-logo">Tetris Tower Defense</h1>
+      <p class="title-tagline">Drop tetromino defenses. Survive 100 waves. Protect your home base.</p>
+      <p id="title-best-score" class="title-best-score hidden"></p>
+    </header>
+
+    <section class="title-section">
+      <h2 class="title-section-heading">Game Mode</h2>
+      <div class="mode-grid" id="mode-grid">
+        <button type="button" class="mode-card active" data-mode="classic">
+          <span class="mode-card-name">Classic</span>
+          <span class="mode-card-desc">All shapes. Shop every 5 waves.</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="straights">
+          <span class="mode-card-name">Straights Only</span>
+          <span class="mode-card-desc">I pieces in deck and shop.</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="bendy">
+          <span class="mode-card-name">Bendy Only</span>
+          <span class="mode-card-desc">S and Z pieces in deck and shop.</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="lebron">
+          <span class="mode-card-name">Lebron James</span>
+          <span class="mode-card-desc">L and J pieces in deck and shop.</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="big_o">
+          <span class="mode-card-name">Big O</span>
+          <span class="mode-card-desc">O pieces in deck and shop.</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="t_piece">
+          <span class="mode-card-name">T</span>
+          <span class="mode-card-desc">T pieces in deck and shop.</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="random">
+          <span class="mode-card-name">Random</span>
+          <span class="mode-card-desc">No shop. Full deck swap every 5 waves.</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="title-section title-section-compact">
+      <h2 class="title-section-heading">Difficulty</h2>
+      <div class="run-options-row">
+        <label><input type="radio" name="run-difficulty" value="casual" /> Casual</label>
+        <label><input type="radio" name="run-difficulty" value="normal" checked /> Normal</label>
+        <label><input type="radio" name="run-difficulty" value="brutal" /> Brutal</label>
+      </div>
+      <label class="run-daily-label title-daily">
+        <input type="checkbox" id="run-daily-seed" />
+        Daily seed run (<span id="daily-seed-label">today</span>)
+      </label>
+    </section>
+
+    <div class="title-actions">
+      <button type="button" id="title-play-btn" class="title-play-btn">Play</button>
+      <div class="title-links">
+        <a href="highscores.html" class="title-link">High Scores</a>
+        <button type="button" id="title-music-mute-btn" class="hud-icon-btn title-music-mute" data-action="music-mute" aria-label="Mute music" title="Mute music" aria-pressed="false"><span class="music-mute-on">♪</span><span class="music-mute-off hidden">🔇</span></button>
+        <button type="button" id="title-settings-btn" class="title-link-btn">Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="game-root">
   <div id="canvas-wrap">
     <canvas id="game-canvas"></canvas>
@@ -34,10 +102,9 @@
     </div>
     <div id="overlay" class="hidden">
       <div id="overlay-content">
-        <h2 id="overlay-title">Tetris Tower Defense</h2>
-        <p id="overlay-message">Place your home base anywhere. It will define where the enemies converge — choose wisely.</p>
-        <p id="overlay-best-score" class="overlay-best-score hidden"></p>
-        <button id="overlay-button">Start</button>
+        <h2 id="overlay-title">Game Over</h2>
+        <p id="overlay-message"></p>
+        <button id="overlay-button">Back to Title</button>
       </div>
     </div>
   </div>
@@ -46,6 +113,9 @@
     <div class="hud-top">
       <h1>TTD</h1>
       <div class="hud-top-actions">
+        <button type="button" id="music-mute-btn" class="hud-icon-btn" data-action="music-mute" aria-label="Mute music" title="Mute music" aria-pressed="false"><span class="music-mute-on">♪</span><span class="music-mute-off hidden">🔇</span></button>
+        <button type="button" id="settings-btn" class="hud-icon-btn" aria-label="Settings" title="Settings">⚙</button>
+        <button type="button" id="mobile-controls-hud-btn" class="hud-icon-btn mobile-hud-toggle" aria-label="Toggle touch controls" aria-pressed="false" title="Touch controls">Pad</button>
         <a href="highscores.html" id="highscores-btn" class="hud-icon-btn" aria-label="View high score" title="High score">★</a>
         <button type="button" id="help-btn" class="help-btn" aria-label="Help" aria-expanded="false" title="How to play">?</button>
       </div>
@@ -54,7 +124,8 @@
 
     <div class="hud-section hud-stats-section">
       <div class="hud-stats-grid">
-        <div class="hud-stat"><span>Score</span><span id="score">0</span></div>
+        <div class="hud-stat"><span>Points</span><span id="score">0</span></div>
+        <div class="hud-stat"><span>Total Earned</span><span id="total-earned">0</span></div>
         <div class="hud-stat"><span>Base HP</span><span id="base-hp">--</span></div>
         <div class="hud-stat"><span>Wave</span><span id="wave">0 / 100</span></div>
         <div class="hud-stat"><span>Speed Tier</span><span id="speed-tier">1</span></div>
@@ -91,13 +162,13 @@
         <div><kbd>&larr;</kbd> <kbd>&rarr;</kbd> Move</div>
         <div><kbd>&darr;</kbd> Soft drop</div>
         <div><kbd>Space</kbd> Hard drop</div>
-        <div><kbd>&uarr;</kbd> / <kbd>R</kbd> Rotate</div>
+        <div><kbd>&uarr;</kbd> / <kbd>R</kbd> Rotate CW · <kbd>Z</kbd> Rotate CCW</div>
         <div><kbd>C</kbd> Hold piece</div>
         <div><kbd>F</kbd> Wave speed</div>
         <div><kbd>P</kbd> Pause</div>
       </div>
       <div class="muted">Click damaged block to repair (10 pts/HP × rarity; base heals at 4×).</div>
-      <div class="controls-touch-hint muted">Use on-screen controls below the board.</div>
+      <div class="controls-touch-hint muted">Swipe the board to move/drop; tap empty space to rotate. On-screen Pad below the board (toggle via Pad in the header).</div>
       <label class="mobile-toggle">
         <input type="checkbox" id="mobile-controls-toggle" />
         Mobile controls
@@ -110,6 +181,24 @@
   <div id="ad-slot" class="ad-slot"></div>
   <p class="ad-legal muted"><a href="privacy.html">Privacy</a></p>
 </footer>
+</div>
+
+<div id="settings-modal" class="hidden" role="dialog" aria-labelledby="settings-title" aria-modal="true">
+  <div class="modal-content settings-modal-content">
+    <h2 id="settings-title">Settings</h2>
+    <form id="settings-form" class="settings-form">
+      <label>Master volume <input type="range" id="settings-master" min="0" max="1" step="0.05" /></label>
+      <label>SFX volume <input type="range" id="settings-sfx" min="0" max="1" step="0.05" /></label>
+      <label>Music volume <input type="range" id="settings-music" min="0" max="1" step="0.05" /></label>
+      <label class="settings-check"><input type="checkbox" id="settings-music-muted" /> Mute music</label>
+      <label class="settings-check"><input type="checkbox" id="settings-reduce-motion" /> Reduce motion</label>
+      <label class="settings-check"><input type="checkbox" id="settings-path-preview" /> Show enemy path preview during build</label>
+      <label class="settings-check"><input type="checkbox" id="settings-colorblind" /> High-contrast role patterns</label>
+    </form>
+    <div class="settings-footer">
+      <button type="button" id="settings-close">Close</button>
+    </div>
+  </div>
 </div>
 
 <div id="help-modal" class="hidden" role="dialog" aria-labelledby="help-title" aria-modal="true">
@@ -134,9 +223,9 @@
         <h3>Controls</h3>
         <ul>
           <li><kbd>←</kbd> <kbd>→</kbd> move · <kbd>↓</kbd> soft drop · <kbd>Space</kbd> hard drop</li>
-          <li><kbd>↑</kbd> / <kbd>R</kbd> rotate · <kbd>Z</kbd> rotate CCW · <kbd>C</kbd> hold</li>
+          <li><kbd>↑</kbd> / <kbd>R</kbd> rotate CW · <kbd>Z</kbd> rotate CCW · <kbd>C</kbd> hold</li>
           <li><kbd>F</kbd> cycle wave speed (during waves) · <kbd>P</kbd> pause</li>
-          <li>Enable <strong>mobile controls</strong> in the HUD on touch devices.</li>
+          <li>Tap <strong>Pad</strong> in the HUD to show on-screen buttons. Swipe the board to move; tap to rotate; tap damaged cells to repair.</li>
         </ul>
       </section>
       <section>
@@ -264,25 +353,31 @@
   </div>
 </div>
 
-<script src="js/config.js?v=16"></script>
-<script src="js/matchups.js?v=16"></script>
-<script src="js/highscores.js?v=16"></script>
-<script src="js/cards.js?v=16"></script>
-<script src="js/deck.js?v=16"></script>
-<script src="js/synergy.js?v=16"></script>
-<script src="js/grid.js?v=16"></script>
-<script src="js/pieces.js?v=16"></script>
-<script src="js/pathfinding.js?v=16"></script>
-<script src="js/projectiles.js?v=16"></script>
-<script src="js/enemies.js?v=16"></script>
-<script src="js/towers.js?v=16"></script>
-<script src="js/waves.js?v=16"></script>
-<script src="js/ui.js?v=17"></script>
-<script src="js/input.js?v=16"></script>
-<script src="js/mobile-controls.js?v=16"></script>
-<script src="js/render.js?v=16"></script>
-<script src="js/game.js?v=16"></script>
-<script src="js/main.js?v=16"></script>
-<script src="js/ads.js?v=18"></script>
+<script src="js/config.js?v=24"></script>
+<script src="js/settings.js?v=24"></script>
+<script src="js/seed.js?v=24"></script>
+<script src="js/audio.js?v=24"></script>
+<script src="js/stats.js?v=24"></script>
+<script src="js/achievements.js?v=24"></script>
+<script src="js/game-modes.js?v=24"></script>
+<script src="js/matchups.js?v=24"></script>
+<script src="js/highscores.js?v=24"></script>
+<script src="js/cards.js?v=24"></script>
+<script src="js/deck.js?v=24"></script>
+<script src="js/synergy.js?v=24"></script>
+<script src="js/grid.js?v=24"></script>
+<script src="js/pieces.js?v=24"></script>
+<script src="js/pathfinding.js?v=24"></script>
+<script src="js/projectiles.js?v=24"></script>
+<script src="js/enemies.js?v=24"></script>
+<script src="js/towers.js?v=24"></script>
+<script src="js/waves.js?v=24"></script>
+<script src="js/ui.js?v=24"></script>
+<script src="js/input.js?v=24"></script>
+<script src="js/mobile-controls.js?v=24"></script>
+<script src="js/render.js?v=24"></script>
+<script src="js/game.js?v=24"></script>
+<script src="js/main.js?v=24"></script>
+<script src="js/ads.js?v=24"></script>
 </body>
 </html>

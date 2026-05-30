@@ -4,7 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>High Score — Tetris Tower Defense</title>
-<link rel="stylesheet" href="styles.css?v=18" />
+<link rel="stylesheet" href="styles.css?v=24" />
+<link rel="manifest" href="manifest.json" />
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6914309383865227"
      crossorigin="anonymous"></script>
 </head>
@@ -13,11 +14,11 @@
 <main class="highscores-page">
   <header class="highscores-page-header">
     <h1>High Score</h1>
-    <p class="muted">Your best run is ranked by highest <strong>wave</strong> reached, then <strong>points</strong> remaining.</p>
+    <p class="muted">Track your best runs by wave, points remaining, or total points earned. Filter by mode, difficulty, and run type.</p>
   </header>
 
   <section id="highscore-hero" class="highscore-hero hidden" aria-live="polite">
-    <p class="highscore-hero-label">Your best run</p>
+    <p class="highscore-hero-label" id="hero-label">Your best run</p>
     <div class="highscore-hero-stats">
       <div class="highscore-stat-block">
         <span class="highscore-stat-value" id="hero-wave">—</span>
@@ -27,6 +28,10 @@
         <span class="highscore-stat-value" id="hero-points">—</span>
         <span class="highscore-stat-label">Points left</span>
       </div>
+      <div class="highscore-stat-block">
+        <span class="highscore-stat-value" id="hero-total-earned">—</span>
+        <span class="highscore-stat-label">Total earned</span>
+      </div>
     </div>
     <p class="highscore-hero-meta">
       <span id="hero-result"></span>
@@ -35,26 +40,76 @@
   </section>
 
   <section id="highscore-none" class="highscore-none hidden">
-    <p>No high score yet.</p>
-    <p class="muted">Finish a game run and your best wave and remaining points will appear here.</p>
+    <p>No runs saved yet.</p>
+    <p class="muted">Finish a game run and your stats will appear here.</p>
   </section>
 
-  <details class="highscores-all-runs" id="highscores-all-runs">
+  <section id="highscore-daily" class="highscore-daily muted">
+    <p>Today&apos;s daily seed: <strong id="daily-seed-display">—</strong></p>
+    <p class="muted">Enable &quot;Daily seed run&quot; on the title screen for comparable runs.</p>
+  </section>
+
+  <details class="highscores-all-runs" id="achievements-section" open>
+    <summary>Achievements (<span id="achievements-count">0</span> / <span id="achievements-total">0</span>)</summary>
+    <p class="achievements-intro muted">Clear all 100 waves in a mode to earn its victory badge.</p>
+    <ul id="achievements-list" class="achievements-list"></ul>
+  </details>
+
+  <details class="highscores-all-runs" id="lifetime-stats-section" open>
+    <summary>Lifetime stats</summary>
+    <div id="lifetime-stats" class="lifetime-stats muted">—</div>
+  </details>
+
+  <details class="highscores-all-runs" id="highscores-all-runs" open>
     <summary>All saved runs</summary>
+    <div class="highscores-controls">
+      <div class="highscores-control-group">
+        <label class="highscores-control-label" for="filter-mode">Mode</label>
+        <select id="filter-mode" class="highscores-select"></select>
+      </div>
+      <div class="highscores-control-group">
+        <label class="highscores-control-label" for="filter-difficulty">Difficulty</label>
+        <select id="filter-difficulty" class="highscores-select">
+          <option value="all">All</option>
+          <option value="casual">Casual</option>
+          <option value="normal">Normal</option>
+          <option value="brutal">Brutal</option>
+        </select>
+      </div>
+      <div class="highscores-control-group">
+        <label class="highscores-control-label" for="filter-daily">Run type</label>
+        <select id="filter-daily" class="highscores-select">
+          <option value="all">All runs</option>
+          <option value="standard">Standard only</option>
+          <option value="daily">Daily seed only</option>
+        </select>
+      </div>
+      <div class="highscores-control-group">
+        <label class="highscores-control-label" for="sort-by">Sort by</label>
+        <select id="sort-by" class="highscores-select">
+          <option value="wave">Wave reached</option>
+          <option value="score">Points remaining</option>
+          <option value="totalEarned">Total earned</option>
+          <option value="date">Date</option>
+        </select>
+      </div>
+    </div>
+    <p id="highscores-filter-summary" class="highscores-filter-summary muted"></p>
     <div class="highscores-table-wrap">
       <table class="highscores-table">
         <thead>
           <tr>
             <th>#</th>
             <th>Wave</th>
-            <th>Points</th>
-            <th>Result</th>
+            <th>Left</th>
+            <th>Earned</th>
+            <th>Run</th>
             <th>Date</th>
           </tr>
         </thead>
         <tbody id="highscores-list"></tbody>
       </table>
-      <p id="highscores-empty-list" class="muted highscores-empty hidden">No runs saved.</p>
+      <p id="highscores-empty-list" class="muted highscores-empty hidden">No runs match these filters.</p>
     </div>
   </details>
 
@@ -70,8 +125,12 @@
 </footer>
 </div>
 
-<script src="js/highscores.js?v=14"></script>
-<script src="js/highscores-page.js?v=14"></script>
-<script src="js/ads.js?v=18"></script>
+<script src="js/seed.js?v=24"></script>
+<script src="js/stats.js?v=24"></script>
+<script src="js/achievements.js?v=24"></script>
+<script src="js/game-modes.js?v=24"></script>
+<script src="js/highscores.js?v=24"></script>
+<script src="js/highscores-page.js?v=24"></script>
+<script src="js/ads.js?v=24"></script>
 </body>
 </html>

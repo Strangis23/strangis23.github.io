@@ -4,6 +4,7 @@ class UI {
   constructor(game) {
     this.game = game;
     this.elScore = document.getElementById('score');
+    this.elTotalEarned = document.getElementById('total-earned');
     this.elBaseHp = document.getElementById('base-hp');
     this.elWave = document.getElementById('wave');
     this.elTier = document.getElementById('speed-tier');
@@ -28,6 +29,12 @@ class UI {
     this.overlayMessage = document.getElementById('overlay-message');
     this.overlayButton = document.getElementById('overlay-button');
 
+    this.titleScreen = document.getElementById('title-screen');
+    this.titlePlayBtn = document.getElementById('title-play-btn');
+    this.titleSettingsBtn = document.getElementById('title-settings-btn');
+    this.modeGrid = document.getElementById('mode-grid');
+    this.selectedGameMode = 'classic';
+
     this.shopModal = document.getElementById('shop-modal');
     this.shopWave = document.getElementById('shop-wave');
     this.shopPoints = document.getElementById('shop-points');
@@ -46,6 +53,11 @@ class UI {
     this.sortDirectionBtn = document.getElementById('sort-direction');
     this.shopBaseUpgrade = document.getElementById('shop-base-upgrade');
     this.shopBaseHpLabel = document.getElementById('shop-base-hp-label');
+
+    this.settingsModal = document.getElementById('settings-modal');
+    this.settingsBtn = document.getElementById('settings-btn');
+    this.settingsClose = document.getElementById('settings-close');
+    this.settingsForm = document.getElementById('settings-form');
 
     this.shopDeckSort = { key: 'shape', asc: true };
     this._lastShopScore = null;
@@ -80,8 +92,61 @@ class UI {
         if (e.target === this.helpModal) this.closeHelp();
       });
     }
+    if (this.settingsBtn) {
+      this.settingsBtn.addEventListener('click', () => this.openSettings());
+    }
+    if (this.settingsClose) {
+      this.settingsClose.addEventListener('click', () => this.closeSettings());
+    }
+    if (this.settingsModal) {
+      this.settingsModal.addEventListener('click', (e) => {
+        if (e.target === this.settingsModal) this.closeSettings();
+      });
+    }
+    if (this.settingsForm) {
+      this.settingsForm.addEventListener('change', () => {
+        readSettingsFromForm(this.settingsForm);
+        if (typeof AudioEngine !== 'undefined') AudioEngine.applyVolumes();
+      });
+    }
+
+    if (this.modeGrid) {
+      this.modeGrid.addEventListener('click', (e) => {
+        const btn = e.target.closest('.mode-card');
+        if (!btn) return;
+        this.selectGameMode(btn.dataset.mode);
+      });
+    }
+    if (this.titlePlayBtn) {
+      this.titlePlayBtn.addEventListener('click', () => this.startFromTitle());
+    }
+    if (this.titleScreen) {
+      this.titleScreen.addEventListener('click', () => {
+        if (typeof AudioEngine !== 'undefined') AudioEngine.unlock();
+      });
+    }
+    if (this.titleSettingsBtn) {
+      this.titleSettingsBtn.addEventListener('click', () => this.openSettings());
+    }
+    document.querySelectorAll('[data-action="music-mute"]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof AudioEngine !== 'undefined') {
+          AudioEngine.unlock();
+          AudioEngine.toggleMusicMuted();
+        }
+      });
+    });
+
     window.addEventListener('keydown', (e) => {
       if (e.code !== 'Escape') return;
+      const settingsOpen = this.settingsModal && !this.settingsModal.classList.contains('hidden');
+      if (settingsOpen) {
+        e.preventDefault();
+        this.closeSettings();
+        return;
+      }
       if (this.game.helpOpen) {
         e.preventDefault();
         this.closeHelp();
@@ -95,6 +160,7 @@ class UI {
     });
 
     this.initHudCollapsible();
+    if (typeof AudioEngine !== 'undefined') AudioEngine._syncMuteButtons();
   }
 
   initHudCollapsible() {
@@ -122,12 +188,78 @@ class UI {
     if (this.helpBtn) this.helpBtn.setAttribute('aria-expanded', 'false');
   }
 
-  updateIntroBestLine() {
-    const el = document.getElementById('overlay-best-score');
+  openSettings() {
+    if (!this.settingsModal || !this.settingsForm) return;
+    applySettingsToForm(this.settingsForm);
+    this.settingsModal.classList.remove('hidden');
+    if (typeof AudioEngine !== 'undefined') AudioEngine.unlock();
+  }
+
+  closeSettings() {
+    if (!this.settingsModal) return;
+    this.settingsModal.classList.add('hidden');
+  }
+
+  getRunStartOptions() {
+    const diffEl = document.querySelector('input[name="run-difficulty"]:checked');
+    const dailyEl = document.getElementById('run-daily-seed');
+    return {
+      difficulty: diffEl ? diffEl.value : 'normal',
+      dailySeed: dailyEl ? dailyEl.checked : false,
+      gameMode: this.selectedGameMode || 'classic',
+    };
+  }
+
+  selectGameMode(id) {
+    this.selectedGameMode = id || 'classic';
+    if (!this.modeGrid) return;
+    this.modeGrid.querySelectorAll('.mode-card').forEach((el) => {
+      el.classList.toggle('active', el.dataset.mode === this.selectedGameMode);
+    });
+  }
+
+  showTitleScreen() {
+    if (this.game.phase === 'GAMEOVER' || this.game.phase === 'WIN') {
+      this.game.reset();
+    }
+    this.updateTitleBestLine();
+    this.selectGameMode(this.selectedGameMode || 'classic');
+    if (this.titleScreen) this.titleScreen.classList.remove('hidden');
+    document.body.classList.add('title-visible');
+    if (typeof AudioEngine !== 'undefined') {
+      AudioEngine.setMusicPhase('menu');
+    }
+  }
+
+  hideTitleScreen() {
+    if (this.titleScreen) this.titleScreen.classList.add('hidden');
+    document.body.classList.remove('title-visible');
+  }
+
+  startFromTitle() {
+    if (typeof AudioEngine !== 'undefined') AudioEngine.unlock();
+    this.hideTitleScreen();
+    this.game.startNewRun(this.getRunStartOptions());
+  }
+
+  updateTitleBestLine() {
+    const el = document.getElementById('title-best-score');
     if (!el) return;
-    const line = typeof formatBestHighScoreLine === 'function' ? formatBestHighScoreLine() : '';
-    el.textContent = line;
-    el.classList.toggle('hidden', !line);
+    const parts = [];
+    if (typeof formatBestHighScoreLine === 'function') {
+      const best = formatBestHighScoreLine();
+      if (best) parts.push(best);
+    }
+    if (typeof formatLifetimePointsLine === 'function') {
+      const lifetime = formatLifetimePointsLine();
+      if (lifetime) parts.push(lifetime);
+    }
+    el.textContent = parts.join(' · ');
+    el.classList.toggle('hidden', parts.length === 0);
+  }
+
+  updateIntroBestLine() {
+    this.updateTitleBestLine();
   }
 
   showOverlay({ title, message, button = 'OK', onClick }) {
@@ -148,8 +280,12 @@ class UI {
       const result = addHighScore({
         wave,
         score,
+        totalEarned: detail.runStats?.totalPointsEarned ?? 0,
         win: !!detail.win,
         reason: detail.reason,
+        difficulty: detail.difficulty,
+        dailySeed: detail.dailySeed,
+        gameMode: detail.gameMode,
       });
       rank = result.rank;
     }
@@ -157,6 +293,15 @@ class UI {
     let message = detail.win
       ? `You cleared all 100 waves.\nWave ${wave} · ${score.toLocaleString()} points remaining.`
       : `${detail.reason || 'Run ended.'}\nWave ${wave} · ${score.toLocaleString()} points remaining.`;
+    const totalEarned = detail.runStats?.totalPointsEarned ?? 0;
+    if (totalEarned > 0) {
+      message += `\nTotal earned this run: ${totalEarned.toLocaleString()} pts`;
+    }
+
+    if (typeof formatRunStatsBlock === 'function' && detail.runStats) {
+      const block = formatRunStatsBlock(detail.runStats, detail);
+      if (block) message += `\n\n--- Run stats ---\n${block}`;
+    }
 
     const topN = typeof HIGHSCORES_TOP_N !== 'undefined' ? HIGHSCORES_TOP_N : 10;
     if (rank != null && rank <= topN) {
@@ -165,10 +310,20 @@ class UI {
       message += `\n\nRank #${rank} on your leaderboard.`;
     }
 
-    this.updateIntroBestLine();
+    if (detail.newAchievements && detail.newAchievements.length > 0) {
+      message += '\n\nAchievements unlocked:';
+      for (const a of detail.newAchievements) {
+        message += `\n• ${a.title} — ${a.desc}`;
+      }
+    }
+
+    this.updateTitleBestLine();
     this.showOverlay({
-      title, message, button: 'Play Again',
-      onClick: () => { this.hideOverlay(); this.game.startNewRun(); },
+      title, message, button: 'Back to Title',
+      onClick: () => {
+        this.hideOverlay();
+        this.showTitleScreen();
+      },
     });
   }
 
@@ -286,6 +441,7 @@ class UI {
       return;
     }
     this.game.setBanner('Card swapped!', 1.0);
+    if (typeof unlockAchievement === 'function') unlockAchievement('shop_swap');
     this._lastShopScore = null;
     this.renderShop();
   }
@@ -388,6 +544,10 @@ class UI {
 
   sync(game) {
     this.elScore.textContent = game.score.toLocaleString();
+    if (this.elTotalEarned) {
+      const earned = game.runStats?.totalPointsEarned ?? 0;
+      this.elTotalEarned.textContent = earned.toLocaleString();
+    }
     if (this.elBaseHp) {
       if (game.baseMaxHp > 0) {
         this.elBaseHp.textContent = `${Math.ceil(game.baseHp)} / ${game.baseMaxHp}`;
@@ -408,7 +568,7 @@ class UI {
     if (this.elWaveSpeed) {
       this.elWaveSpeed.textContent = game.phase === 'WAVE' ? `${game.waveSpeed}x` : `${game.waveSpeed}x (idle)`;
     }
-    this.elPhase.textContent = phaseLabel(game.phase);
+    this.elPhase.textContent = phaseLabel(game.phase, game.gameMode);
     if (this.elPhase) {
       this.elPhase.dataset.phase = game.phase;
     }
@@ -482,7 +642,7 @@ class UI {
     const targetWave = Math.max(1, game.wave);
     const preview = (typeof previewWave === 'function') ? previewWave(targetWave) : null;
     if (!preview) return;
-    const sig = `w${targetWave}:${preview.walkers}-${preview.brutes}-${preview.flyers}-${preview.boss}-${preview.bossLabel || ''}`;
+    const sig = `w${targetWave}:${preview.walkers}-${preview.brutes}-${preview.flyers}-${preview.rushers || 0}-${preview.shielded || 0}-${preview.boss}-${preview.bossLabel || ''}`;
     if (this._lastWavePreviewSig === sig) return;
     this._lastWavePreviewSig = sig;
     const parts = [];
@@ -492,6 +652,8 @@ class UI {
     if (preview.walkers > 0) parts.push(['walker', '●', preview.walkers]);
     if (preview.brutes > 0)  parts.push(['brute',  '■', preview.brutes]);
     if (preview.flyers > 0)  parts.push(['flyer',  '✦', preview.flyers]);
+    if (preview.rushers > 0) parts.push(['rusher', '»', preview.rushers]);
+    if (preview.shielded > 0) parts.push(['shielded', '◆', preview.shielded]);
     if (preview.boss > 0 && !preview.isBossWave) parts.push(['boss', '✶', preview.boss]);
     this.elWavePreview.innerHTML = parts
       .map(([type, sym, n]) => `<span class="enemy-pill" data-type="${type}"><span class="swatch"></span>${sym} ${n}</span>`)
@@ -572,16 +734,21 @@ function drawCardPreview(ctx, w, h, card, opts = {}) {
   ctx.fillText(`${card.role}`, w / 2, h - 4);
 }
 
-function phaseLabel(phase) {
+function phaseLabel(phase, gameMode) {
+  let label;
   switch (phase) {
-    case 'PLACING_BASE': return 'Place Home Base';
-    case 'BUILD':        return 'Build Phase';
-    case 'WAVE':         return 'Wave Phase';
-    case 'SHOP':         return 'Card Shop';
-    case 'GAMEOVER':     return 'Game Over';
-    case 'WIN':          return 'Victory';
-    default:             return 'Idle';
+    case 'PLACING_BASE': label = 'Place Home Base'; break;
+    case 'BUILD':        label = 'Build Phase'; break;
+    case 'WAVE':         label = 'Wave Phase'; break;
+    case 'SHOP':         label = 'Card Shop'; break;
+    case 'GAMEOVER':     label = 'Game Over'; break;
+    case 'WIN':          label = 'Victory'; break;
+    default:             label = 'Idle';
   }
+  if (gameMode && gameMode.id !== 'classic' && phase !== 'IDLE' && phase !== 'GAMEOVER' && phase !== 'WIN') {
+    return `${gameMode.name} · ${label}`;
+  }
+  return label;
 }
 
 function formatStats(stats) {

@@ -143,12 +143,26 @@ class Renderer {
 
   draw(game) {
     const ctx = this.ctx;
+    ctx.save();
+    if (game.screenShake && !(typeof getSetting === 'function' && getSetting('reduceMotion'))) {
+      const s = game.screenShake;
+      const prog = 1 - s.t / s.life;
+      const amp = s.amp * prog;
+      ctx.translate((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
+    }
     ctx.fillStyle = CONFIG.COLORS.BG;
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.drawSpawnBuffer(game);
     this.drawGridLines();
     this.drawCells(game.grid);
+    if (
+      (game.phase === 'BUILD' || game.phase === 'PLACING_BASE') &&
+      typeof getSetting === 'function' &&
+      getSetting('pathPreview') !== false
+    ) {
+      this.drawPathPreview(game);
+    }
     this.drawHoverRange(game);
     if (game.activePiece && (game.phase === 'BUILD' || game.phase === 'PLACING_BASE')) {
       this.drawGhost(game);
@@ -161,6 +175,28 @@ class Renderer {
     }
     this.drawBuildEffects(game);
     this.drawWaveBanner(game);
+    ctx.restore();
+  }
+
+  drawPathPreview(game) {
+    const bases = game.grid.baseCells();
+    if (!bases.length) return;
+    const sx = Math.floor(game.grid.w / 2);
+    const sy = 0;
+    const path = pathfind(game.grid, sx, sy, bases, { mode: 'walker' });
+    if (!path || path.length < 2) return;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(34, 211, 238, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo((sx + 0.5) * this.cellPx, (sy + 0.5) * this.cellPx);
+    for (const step of path.slice(0, 12)) {
+      ctx.lineTo((step.x + 0.5) * this.cellPx, (step.y + 0.5) * this.cellPx);
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 
   drawSpawnBuffer(game) {
@@ -353,7 +389,8 @@ class Renderer {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       const sym = e.isElite ? '✶'
-        : (e.type === 'flyer' ? '✦' : e.type === 'brute' ? '■' : e.type === 'boss' ? '✶' : '●');
+        : (e.type === 'flyer' ? '✦' : e.type === 'brute' ? '■' : e.type === 'boss' ? '✶'
+        : e.type === 'shielded' ? '◆' : e.type === 'rusher' ? '»' : '●');
       ctx.fillText(sym, cx, cy);
       if (e.isElite) {
         ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -368,6 +405,14 @@ class Renderer {
         ctx.fillRect(cx - w/2, cy - r - 6, w, 3);
         ctx.fillStyle = '#22c55e';
         ctx.fillRect(cx - w/2, cy - r - 6, w * ratio, 3);
+      }
+      if (e.maxShieldHp > 0 && e.shieldHp > 0) {
+        const w = this.cellPx * 0.7;
+        const ratio = Math.max(0, e.shieldHp / e.maxShieldHp);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(cx - w/2, cy - r - 11, w, 3);
+        ctx.fillStyle = '#60a5fa';
+        ctx.fillRect(cx - w/2, cy - r - 11, w * ratio, 3);
       }
       if (e.slowTimer > 0) {
         ctx.strokeStyle = 'rgba(34, 211, 238, 0.7)';
