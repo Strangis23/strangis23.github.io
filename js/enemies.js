@@ -31,6 +31,21 @@ class Enemy {
     this._lastX = x; this._lastY = y;
     this._stuckTime = 0;
     this._lifetime = 0;
+    this.facing = Math.PI; // sprite art faces up; default toward base (down screen)
+  }
+
+  updateFacing(dx, dy, dt) {
+    const len = Math.hypot(dx, dy);
+    if (len < 0.001) return;
+    const target = Math.atan2(dy / len, dx / len) + Math.PI / 2;
+    if (!dt || dt <= 0) {
+      this.facing = target;
+      return;
+    }
+    let diff = target - this.facing;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    this.facing += diff * Math.min(1, dt * 14);
   }
 
   // Override
@@ -143,6 +158,7 @@ class Walker extends Enemy {
     const dx = tx - this.x, dy = ty - this.y;
     const dist = Math.hypot(dx, dy);
     const step = speed * dt;
+    if (dist > 0.001) this.updateFacing(dx, dy, dt);
     if (dist <= step) {
       this.x = tx; this.y = ty;
       this.path.shift();
@@ -167,6 +183,7 @@ class Walker extends Enemy {
     const dist = Math.hypot(dx, dy);
     if (dist < 0.001) return;
     const step = speed * dt;
+    this.updateFacing(dx, dy, dt);
     this.x += (dx / dist) * step;
     this.y += (dy / dist) * step;
     this.checkReachedBase(game);
@@ -224,6 +241,7 @@ class Brute extends Walker {
     // If next waypoint is a solid (non-base) cell, attack it instead of moving.
     const nextCell = game.grid.get(target.x, target.y);
     if (nextCell && !nextCell.isBase) {
+      this.updateFacing(target.x + 0.5 - this.x, target.y + 0.5 - this.y, dt);
       this.attackTimer += dt;
       if (this.attackTimer >= this.stats.attackRate) {
         this.attackTimer = 0;
@@ -243,6 +261,7 @@ class Brute extends Walker {
     const dx = tx - this.x, dy = ty - this.y;
     const dist = Math.hypot(dx, dy);
     const step = speed * dt;
+    if (dist > 0.001) this.updateFacing(dx, dy, dt);
     if (dist <= step) {
       this.x = tx; this.y = ty;
       this.path.shift();
@@ -277,6 +296,7 @@ class Flyer extends Enemy {
     const dx = tx - this.x, dy = ty - this.y;
     const dist = Math.hypot(dx, dy);
     const step = speed * dt;
+    if (dist > 0.001) this.updateFacing(dx, dy, dt);
     if (dist <= step) {
       this.x = tx; this.y = ty;
       this.enterBase(game);

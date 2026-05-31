@@ -696,34 +696,19 @@ class UI {
 function drawCardPreview(ctx, w, h, card, opts = {}) {
   if (!card) return;
   const m = SHAPES[card.shape][0];
-  // Auto-size the cell so 4 cells fit comfortably with a 4px margin.
   const margin = 6;
   const cell = Math.floor(Math.min(w, h) - margin * 2) / 4;
   const ox = (w - 4 * cell) / 2;
   const oy = (h - 4 * cell) / 2;
   ctx.fillStyle = CONFIG.RARITY_GLOW[card.rarity] || 'rgba(0,0,0,0)';
   ctx.fillRect(2, 2, w - 4, h - 4);
-  const roleColor = (CONFIG.ROLE_COLORS && CONFIG.ROLE_COLORS[card.role]) || CONFIG.COLORS[card.shape];
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 4; c++) {
-      if (m[r][c]) {
-        const px = ox + c * cell + 1;
-        const py = oy + r * cell + 1;
-        const sz = cell - 2;
-        ctx.fillStyle = roleColor;
-        ctx.fillRect(px, py, sz, sz);
-        const grad = ctx.createLinearGradient(0, py, 0, py + sz);
-        grad.addColorStop(0, 'rgba(255,255,255,0.18)');
-        grad.addColorStop(1, 'rgba(0,0,0,0.35)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(px, py, sz, sz);
-      }
-    }
-  }
-  if (opts.dimmed) {
-    ctx.fillStyle = 'rgba(5,9,18,0.55)';
-    ctx.fillRect(2, 2, w - 4, h - 4);
-  }
+  drawBlockMatrix(ctx, m, ox, oy, cell, {
+    role: card.role,
+    shape: card.shape,
+    rarity: card.rarity,
+    showSynergy: false,
+    dimmed: !!opts.dimmed,
+  });
   ctx.strokeStyle = CONFIG.RARITY_COLORS[card.rarity] || '#777';
   ctx.lineWidth = 2;
   ctx.strokeRect(2, 2, w - 4, h - 4);

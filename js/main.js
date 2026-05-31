@@ -6,6 +6,8 @@
 
   loadSettings();
   if (typeof AudioEngine !== 'undefined') AudioEngine.init();
+  if (typeof loadBlockSprites === 'function') loadBlockSprites();
+  if (typeof loadEnemySprites === 'function') loadEnemySprites();
 
   const canvas = document.getElementById('game-canvas');
   canvas.width = CONFIG.GRID_W * CONFIG.CELL_PX;

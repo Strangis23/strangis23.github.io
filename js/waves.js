@@ -1,7 +1,13 @@
 // Wave composition and spawn schedule generation.
 // Returns { schedule: [{type, at, elite?}], i, t } where 'at' is seconds from wave start.
 
-const BOSS_TYPE_LABELS = { walker: 'Walker', brute: 'Brute', flyer: 'Flyer' };
+const BOSS_TYPE_LABELS = {
+  walker: 'Heavy Walker',
+  brute: 'Siege Brute',
+  flyer: 'Flyer Flagship',
+  rusher: 'Swarm Rusher',
+  shielded: 'Citadel Shielded',
+};
 
 function getBossWaveInfo(wave) {
   if (wave <= 0 || wave % 10 !== 0) return null;
