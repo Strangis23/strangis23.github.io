@@ -50,6 +50,7 @@ class Game {
   // Swap the active piece with the held card (or draw a new one if hold is empty).
   // Limited to one swap per piece to prevent stalling.
   holdSwap() {
+    if (this.paused) return false;
     if (this.phase !== 'BUILD' && this.phase !== 'PLACING_BASE') return false;
     if (this.difficulty && this.difficulty.holdEnabled === false) return false;
     if (!this.activePiece) return false;
@@ -159,7 +160,12 @@ class Game {
       return;
     }
     this.paused = !this.paused;
-    if (this.paused) this.setBanner('Paused', 99); else this.banner = null;
+    if (this.paused) {
+      this.input?.clearHeld?.();
+      this.setBanner('Paused', 99);
+    } else {
+      this.banner = null;
+    }
   }
 
   openHelp() {
@@ -168,6 +174,7 @@ class Game {
     this._wasPausedBeforeHelp = this.paused;
     this.helpOpen = true;
     this.paused = true;
+    this.input?.clearHeld?.();
     this.banner = null;
   }
 
@@ -320,22 +327,28 @@ class Game {
 
   // ---------- input handlers ----------
   movePiece(dx, dy) {
-    if (!this.activePiece) return;
+    if (this.paused || !this.activePiece) return;
     if (this.activePiece.tryMove(this.grid, dx, dy)) {
       this.lockTimer = 0;
       if (typeof AudioEngine !== 'undefined') AudioEngine.play('move');
     }
   }
   rotatePiece(dir) {
-    if (!this.activePiece) return;
+    if (this.paused || !this.activePiece) return;
     if (this.activePiece.tryRotate(this.grid, dir)) {
       this.lockTimer = 0;
       if (typeof AudioEngine !== 'undefined') AudioEngine.play('rotate');
     }
   }
-  softDrop(on) { this.softDropping = on; }
+  softDrop(on) {
+    if (this.paused) {
+      this.softDropping = false;
+      return;
+    }
+    this.softDropping = on;
+  }
   hardDrop() {
-    if (!this.activePiece) return;
+    if (this.paused || !this.activePiece) return;
     this.activePiece.hardDrop(this.grid);
     if (typeof AudioEngine !== 'undefined') AudioEngine.play('drop');
     this.lockPiece();

@@ -4,19 +4,26 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Tetris Tower Defense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet" />
 <link rel="manifest" href="manifest.json" />
-<link rel="stylesheet" href="styles.css?v=27" />
+<link rel="stylesheet" href="styles.css?v=30" />
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6914309383865227"
      crossorigin="anonymous"></script>
 </head>
 <body>
+<canvas id="starfield-canvas" aria-hidden="true"></canvas>
 <div id="app-shell">
 <div id="title-screen">
-  <div class="title-screen-panel">
+  <div class="title-screen-panel space-panel">
     <header class="title-header">
-      <p class="title-kicker">Deck-builder tower defense</p>
-      <h1 class="title-logo">Tetris Tower Defense</h1>
-      <p class="title-tagline">Drop tetromino defenses. Survive 100 waves. Protect your home base.</p>
+      <p class="title-kicker">Deep space · deck-builder tower defense</p>
+      <div class="title-logo-wrap">
+        <span class="title-orbit" aria-hidden="true"></span>
+        <h1 class="title-logo">Tetris Tower Defense</h1>
+      </div>
+      <p class="title-tagline">Deploy tactical modules. Survive 100 waves. Protect your command core.</p>
       <p id="title-best-score" class="title-best-score hidden"></p>
     </header>
 
@@ -101,7 +108,7 @@
       </div>
     </div>
     <div id="overlay" class="hidden">
-      <div id="overlay-content">
+      <div id="overlay-content" class="space-panel">
         <h2 id="overlay-title">Game Over</h2>
         <p id="overlay-message"></p>
         <button id="overlay-button">Back to Title</button>
@@ -109,7 +116,7 @@
     </div>
   </div>
 
-  <aside id="hud">
+  <aside id="hud" class="space-panel">
     <div class="hud-top">
       <h1>TTD</h1>
       <div class="hud-top-actions">
@@ -184,7 +191,7 @@
 </div>
 
 <div id="settings-modal" class="hidden" role="dialog" aria-labelledby="settings-title" aria-modal="true">
-  <div class="modal-content settings-modal-content">
+  <div class="modal-content settings-modal-content space-panel">
     <h2 id="settings-title">Settings</h2>
     <form id="settings-form" class="settings-form">
       <label>Master volume <input type="range" id="settings-master" min="0" max="1" step="0.05" /></label>
@@ -202,7 +209,7 @@
 </div>
 
 <div id="help-modal" class="hidden" role="dialog" aria-labelledby="help-title" aria-modal="true">
-  <div class="modal-content help-modal-content">
+  <div class="modal-content help-modal-content space-panel">
     <h2 id="help-title">How to Play</h2>
     <div class="help-body">
       <section>
@@ -300,7 +307,7 @@
 </div>
 
 <div id="shop-modal" class="hidden">
-  <div class="modal-content shop-modal-content">
+  <div class="modal-content shop-modal-content space-panel">
     <div class="shop-header">
       <h2>Card Shop</h2>
       <p class="muted">Wave <span id="shop-wave">5</span> cleared. Buy any card to permanently add it to your deck — but you must remove one of your existing cards in exchange. Higher-wave shops offer rarer cards.</p>
@@ -353,32 +360,33 @@
   </div>
 </div>
 
-<script src="js/config.js?v=27"></script>
-<script src="js/settings.js?v=27"></script>
-<script src="js/seed.js?v=27"></script>
-<script src="js/audio.js?v=27"></script>
-<script src="js/stats.js?v=27"></script>
-<script src="js/achievements.js?v=27"></script>
-<script src="js/game-modes.js?v=27"></script>
-<script src="js/matchups.js?v=27"></script>
-<script src="js/highscores.js?v=27"></script>
-<script src="js/cards.js?v=27"></script>
-<script src="js/deck.js?v=27"></script>
-<script src="js/synergy.js?v=27"></script>
-<script src="js/grid.js?v=27"></script>
-<script src="js/pieces.js?v=27"></script>
-<script src="js/pathfinding.js?v=27"></script>
-<script src="js/projectiles.js?v=27"></script>
-<script src="js/enemies.js?v=27"></script>
-<script src="js/towers.js?v=27"></script>
-<script src="js/waves.js?v=27"></script>
-<script src="js/ui.js?v=27"></script>
-<script src="js/input.js?v=27"></script>
-<script src="js/mobile-controls.js?v=27"></script>
-<script src="js/sprites.js?v=27"></script>
-<script src="js/render.js?v=27"></script>
-<script src="js/game.js?v=27"></script>
-<script src="js/main.js?v=27"></script>
-<script src="js/ads.js?v=27"></script>
+<script src="js/config.js?v=29"></script>
+<script src="js/settings.js?v=29"></script>
+<script src="js/seed.js?v=29"></script>
+<script src="js/audio.js?v=29"></script>
+<script src="js/stats.js?v=29"></script>
+<script src="js/achievements.js?v=29"></script>
+<script src="js/game-modes.js?v=29"></script>
+<script src="js/matchups.js?v=29"></script>
+<script src="js/highscores.js?v=29"></script>
+<script src="js/cards.js?v=29"></script>
+<script src="js/deck.js?v=29"></script>
+<script src="js/synergy.js?v=29"></script>
+<script src="js/grid.js?v=29"></script>
+<script src="js/pieces.js?v=29"></script>
+<script src="js/pathfinding.js?v=29"></script>
+<script src="js/projectiles.js?v=29"></script>
+<script src="js/enemies.js?v=29"></script>
+<script src="js/towers.js?v=29"></script>
+<script src="js/waves.js?v=29"></script>
+<script src="js/ui.js?v=29"></script>
+<script src="js/input.js?v=29"></script>
+<script src="js/mobile-controls.js?v=29"></script>
+<script src="js/sprites.js?v=29"></script>
+<script src="js/render.js?v=29"></script>
+<script src="js/game.js?v=29"></script>
+<script src="js/starfield.js?v=29"></script>
+<script src="js/main.js?v=29"></script>
+<script src="js/ads.js?v=29"></script>
 </body>
 </html>

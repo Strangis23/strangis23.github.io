@@ -85,7 +85,7 @@ class MobileControls {
           if (action === 'waveSpeed') this.syncVisibility();
           return;
         }
-        if (!this.input.canControlPiece()) return;
+        if (!this.input.canActOnPiece()) return;
         if (repeat.has(action)) {
           btn.setPointerCapture(e.pointerId);
           btn.classList.add('mob-btn-held');

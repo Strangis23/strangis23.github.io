@@ -4,20 +4,24 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>High Score — Tetris Tower Defense</title>
-<link rel="stylesheet" href="styles.css?v=24" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css?v=29" />
 <link rel="manifest" href="manifest.json" />
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6914309383865227"
      crossorigin="anonymous"></script>
 </head>
 <body class="highscores-page-body">
+<canvas id="starfield-canvas" aria-hidden="true"></canvas>
 <div id="app-shell" class="app-shell-highscores">
 <main class="highscores-page">
   <header class="highscores-page-header">
     <h1>High Score</h1>
-    <p class="muted">Track your best runs by wave, points remaining, or total points earned. Filter by mode, difficulty, and run type.</p>
+    <p class="muted">Track your best runs across the galaxy. Filter by mode, difficulty, and run type.</p>
   </header>
 
-  <section id="highscore-hero" class="highscore-hero hidden" aria-live="polite">
+  <section id="highscore-hero" class="highscore-hero space-panel hidden" aria-live="polite">
     <p class="highscore-hero-label" id="hero-label">Your best run</p>
     <div class="highscore-hero-stats">
       <div class="highscore-stat-block">
@@ -39,12 +43,12 @@
     </p>
   </section>
 
-  <section id="highscore-none" class="highscore-none hidden">
+  <section id="highscore-none" class="highscore-none space-panel hidden">
     <p>No runs saved yet.</p>
     <p class="muted">Finish a game run and your stats will appear here.</p>
   </section>
 
-  <section id="highscore-daily" class="highscore-daily muted">
+  <section id="highscore-daily" class="highscore-daily space-panel muted">
     <p>Today&apos;s daily seed: <strong id="daily-seed-display">—</strong></p>
     <p class="muted">Enable &quot;Daily seed run&quot; on the title screen for comparable runs.</p>
   </section>
@@ -125,12 +129,14 @@
 </footer>
 </div>
 
-<script src="js/seed.js?v=24"></script>
-<script src="js/stats.js?v=24"></script>
-<script src="js/achievements.js?v=24"></script>
-<script src="js/game-modes.js?v=24"></script>
-<script src="js/highscores.js?v=24"></script>
-<script src="js/highscores-page.js?v=24"></script>
-<script src="js/ads.js?v=24"></script>
+<script src="js/settings.js?v=29"></script>
+<script src="js/starfield.js?v=29"></script>
+<script src="js/seed.js?v=29"></script>
+<script src="js/stats.js?v=29"></script>
+<script src="js/achievements.js?v=29"></script>
+<script src="js/game-modes.js?v=29"></script>
+<script src="js/highscores.js?v=29"></script>
+<script src="js/highscores-page.js?v=29"></script>
+<script src="js/ads.js?v=29"></script>
 </body>
 </html>

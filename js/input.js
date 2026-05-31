@@ -52,6 +52,16 @@ class Input {
     return p === 'PLACING_BASE' || p === 'BUILD';
   }
 
+  canActOnPiece() {
+    return this.canControlPiece() && !this.game.paused;
+  }
+
+  clearHeld() {
+    this.held = {};
+    this.repeatTimers = {};
+    this.game.softDrop(false);
+  }
+
   _clientToGrid(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect();
     const sx = (clientX - rect.left) / rect.width * this.canvas.width;
@@ -98,7 +108,7 @@ class Input {
 
   onTouchPointerDown(e) {
     if (e.pointerType !== 'touch') return;
-    if (!this.canControlPiece() || this.game.paused) return;
+    if (!this.canActOnPiece()) return;
     if (this._touchPointerId != null) return;
     this._touchPointerId = e.pointerId;
     this._touchStart = { x: e.clientX, y: e.clientY, t: performance.now() };
@@ -121,7 +131,7 @@ class Input {
     this._touchStart = null;
     this._suppressClickUntil = Date.now() + 400;
 
-    if (!this.canControlPiece() || this.game.paused) return;
+    if (!this.canActOnPiece()) return;
 
     if (!this._touchMoved && dt < this._tapMaxMs) {
       if (this.tryRepairAt(e.clientX, e.clientY)) {
@@ -173,6 +183,7 @@ class Input {
       return;
     }
     if (!this.canControlPiece()) return;
+    if (this.game.paused) return;
 
     const action = this._keyToAction[k];
     if (!action) return;
@@ -197,18 +208,19 @@ class Input {
       case 'waveSpeed':
         g.cycleWaveSpeed();
         return;
-      case 'left':       if (!this.canControlPiece()) return; g.movePiece(-1, 0); break;
-      case 'right':      if (!this.canControlPiece()) return; g.movePiece(1, 0); break;
-      case 'down':       if (!this.canControlPiece()) return; g.softDrop(true); break;
-      case 'rotate':     if (!this.canControlPiece()) return; g.rotatePiece(1); break;
-      case 'rotateCCW':  if (!this.canControlPiece()) return; g.rotatePiece(-1); break;
-      case 'hold':       if (!this.canControlPiece()) return; g.holdSwap(); break;
-      case 'hardDrop':   if (!this.canControlPiece()) return; g.hardDrop(); break;
+      case 'left':       if (!this.canActOnPiece()) return; g.movePiece(-1, 0); break;
+      case 'right':      if (!this.canActOnPiece()) return; g.movePiece(1, 0); break;
+      case 'down':       if (!this.canActOnPiece()) return; g.softDrop(true); break;
+      case 'rotate':     if (!this.canActOnPiece()) return; g.rotatePiece(1); break;
+      case 'rotateCCW':  if (!this.canActOnPiece()) return; g.rotatePiece(-1); break;
+      case 'hold':       if (!this.canActOnPiece()) return; g.holdSwap(); break;
+      case 'hardDrop':   if (!this.canActOnPiece()) return; g.hardDrop(); break;
     }
   }
 
   holdAction(action, on) {
     if (on) {
+      if (!this.canActOnPiece()) return;
       if (!(action in this.held)) this.held[action] = 0;
       this.performAction(action);
     } else {

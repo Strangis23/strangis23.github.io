@@ -614,7 +614,10 @@ class UI {
       chip.className = 'deck-chip';
       chip.dataset.rarity = c.rarity;
       chip.dataset.shape = c.shape;
-      chip.textContent = c.shape;
+      const label = document.createElement('span');
+      label.className = 'deck-chip-shape';
+      label.textContent = c.shape;
+      chip.appendChild(label);
       const mark = document.createElement('span');
       mark.className = 'role-mark';
       mark.textContent = (ROLE_GLYPHS[c.role] || c.role[0]).slice(0, 1);

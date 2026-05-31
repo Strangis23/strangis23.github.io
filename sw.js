@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ttd-v8';
+const CACHE_NAME = 'ttd-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -48,6 +48,7 @@ const ASSETS = [
   './js/ui.js',
   './js/input.js',
   './js/mobile-controls.js',
+  './js/starfield.js',
   './js/sprites.js',
   './js/render.js',
   './js/game.js',
