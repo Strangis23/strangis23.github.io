@@ -27,6 +27,15 @@
   const natH = CONFIG.GRID_H * CONFIG.CELL_PX;
   const gameRoot = document.getElementById('game-root');
 
+  function viewportHeight() {
+    return window.visualViewport?.height ?? window.innerHeight;
+  }
+
+  function mobileControlsReserve() {
+    if (!canvasWrap?.classList.contains('mobile-active')) return 0;
+    return 96;
+  }
+
   function layoutMetrics() {
     if (typeof Platform !== 'undefined' && Platform.fixedWindow) {
       const pad = Platform.layoutPadding || 18;
@@ -46,12 +55,17 @@
     const hudRight = document.getElementById('hud-right');
     const stacked = rs.flexDirection.startsWith('column');
     if (stacked) {
-      const leftH = hudLeft ? hudLeft.offsetHeight : 0;
-      const rightH = hudRight ? hudRight.offsetHeight : 0;
-      const hudH = leftH + rightH + (leftH > 0 && rightH > 0 ? gap : 0);
+      const availW = gameRoot.clientWidth - padX;
+      const adBanner = document.getElementById('ad-banner');
+      const adH = adBanner && !adBanner.classList.contains('hidden')
+        ? adBanner.offsetHeight
+        : 0;
+      const chrome = adH + mobileControlsReserve() + padY + 16;
+      const maxByWidth = availW * (natH / natW);
+      const maxByHeight = viewportHeight() - chrome;
       return {
-        availW: gameRoot.clientWidth - padX,
-        availH: gameRoot.clientHeight - padY - hudH - (hudH > 0 ? gap * 2 : 0),
+        availW,
+        availH: Math.max(200, Math.min(maxByWidth, maxByHeight)),
       };
     }
     const leftW = hudLeft ? hudLeft.offsetWidth : 0;
@@ -103,6 +117,9 @@
       if (hudRight) ro.observe(hudRight);
     }
     window.addEventListener('resize', fitGameCanvas);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', fitGameCanvas);
+    }
   }
   if (typeof Platform !== 'undefined' && Platform.onWindowDisplayChange) {
     Platform.onWindowDisplayChange(() => requestAnimationFrame(fitGameCanvas));

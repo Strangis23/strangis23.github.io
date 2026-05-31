@@ -58,6 +58,8 @@ class MobileControls {
     if (this.waveSpeedBtn) {
       this.waveSpeedBtn.textContent = `${this.game.waveSpeed || 1}x`;
     }
+
+    requestAnimationFrame(() => window.TTD?.fitGameCanvas?.());
   }
 
   _bindButtons() {
