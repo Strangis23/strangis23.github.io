@@ -26,6 +26,8 @@ class Game {
     this._wasPausedBeforeHelp = false;
     this.banner = null;
     this.waveSpawner = null;
+    this.waveEnding = false;
+    this.waveEndTimer = 0;
     this.input = null;
     this.shopCards = []; // currently offered shop cards (each annotated with .bought boolean)
     this.pendingShopBuyIndex = -1; // shop card awaiting deck swap (-1 = none)
@@ -478,6 +480,8 @@ class Game {
       AudioEngine.setMusicPhase('wave');
     }
     this.waveStats = { kills: 0, points: 0, income: 0 };
+    this.waveEnding = false;
+    this.waveEndTimer = 0;
     // Wall passive income at the start of each wave (scaled by per-cell effectiveness).
     let income = 0;
     this.grid.forEachCell((cell) => {
@@ -537,12 +541,26 @@ class Game {
     }
     this.projectiles = this.projectiles.filter((p) => !p.dead);
 
+    if (this.waveEnding) {
+      this.waveEndTimer -= dt;
+      if (this.waveEndTimer <= 0) {
+        this.waveEnding = false;
+        this.endWave();
+      }
+      return;
+    }
+
     if (sp && sp.i >= sp.schedule.length && this.enemies.length === 0) {
-      this.endWave();
+      const delay = CONFIG.WAVE_END_DELAY ?? 1;
+      this.waveEnding = true;
+      this.waveEndTimer = delay;
+      this.setBanner(`Wave ${this.wave} cleared!`, delay + 0.4);
     }
   }
 
   endWave() {
+    this.waveEnding = false;
+    this.waveEndTimer = 0;
     this.clearCombatVisuals();
     const stats = this.waveStats || { kills: 0, points: 0, income: 0 };
     const summary = `Wave ${this.wave} cleared — ${stats.kills} kills • +${stats.points + stats.income} pts`;
@@ -656,6 +674,8 @@ class Game {
     this.projectiles = [];
     this.enemies = [];
     this.waveSpawner = null;
+    this.waveEnding = false;
+    this.waveEndTimer = 0;
     const combatFx = new Set(['muzzle', 'spark', 'splash']);
     this.effects = this.effects.filter((fx) => !combatFx.has(fx.type));
   }

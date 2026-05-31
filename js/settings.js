@@ -28,7 +28,12 @@ function loadSettings() {
 
 function saveSettings(next) {
   _settings = { ...loadSettings(), ...next };
-  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(_settings));
+  const json = JSON.stringify(_settings);
+  if (typeof Platform !== 'undefined' && Platform.persistKey) {
+    Platform.persistKey(SETTINGS_STORAGE_KEY, json);
+  } else {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, json);
+  }
   window.dispatchEvent(new CustomEvent('ttd-settings-changed', { detail: _settings }));
   return _settings;
 }

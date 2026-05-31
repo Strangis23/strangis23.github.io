@@ -1,0 +1,34 @@
+# Dependencies
+desktop/node_modules/
+
+# Electron builds
+desktop/dist/
+
+# Staged Steam depot content (large binaries)
+steam/content/windows/
+steam/content/linux/
+
+# Local SteamPipe config (real App/depot IDs)
+steam/content/app_build.vdf
+steam/content/depot_build_win.vdf
+steam/content/depot_build_linux.vdf
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+npm-debug.log*

@@ -3,14 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>High Score — Tetris Tower Defense</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="styles.css?v=29" />
+<title>High Score — Stackwave Defense</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css" />
+<link rel="stylesheet" href="styles.css?v=31" />
 <link rel="manifest" href="manifest.json" />
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6914309383865227"
-     crossorigin="anonymous"></script>
+     crossorigin="anonymous" data-swd-ads></script>
 </head>
 <body class="highscores-page-body">
 <canvas id="starfield-canvas" aria-hidden="true"></canvas>
@@ -129,14 +127,24 @@
 </footer>
 </div>
 
-<script src="js/settings.js?v=29"></script>
-<script src="js/starfield.js?v=29"></script>
-<script src="js/seed.js?v=29"></script>
-<script src="js/stats.js?v=29"></script>
-<script src="js/achievements.js?v=29"></script>
-<script src="js/game-modes.js?v=29"></script>
-<script src="js/highscores.js?v=29"></script>
-<script src="js/highscores-page.js?v=29"></script>
-<script src="js/ads.js?v=29"></script>
+<script src="js/platform.js?v=31"></script>
+<script src="js/settings.js?v=31"></script>
+<script src="js/starfield.js?v=31"></script>
+<script src="js/seed.js?v=31"></script>
+<script src="js/stats.js?v=31"></script>
+<script src="js/achievements.js?v=31"></script>
+<script src="js/game-modes.js?v=31"></script>
+<script src="js/highscores.js?v=31"></script>
+<script src="js/highscores-page.js?v=31"></script>
+<script src="js/ads.js?v=31"></script>
+<script>
+  (function () {
+    if (typeof Platform !== 'undefined' && !Platform.hasAds) {
+      document.querySelectorAll('[data-swd-ads]').forEach(function (el) { el.remove(); });
+      var banner = document.getElementById('ad-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+  })();
+</script>
 </body>
 </html>

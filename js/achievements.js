@@ -5,11 +5,11 @@ const ACHIEVEMENTS_STORAGE_KEY = 'ttd-achievements';
 const ACHIEVEMENT_DEFS = [
   { id: 'first_win', title: 'Centurion', desc: 'Clear all 100 waves.' },
   { id: 'wave_50', title: 'Halfway There', desc: 'Reach wave 50 in a run.' },
-  { id: 'tetris', title: 'Tetris!', desc: 'Clear 4 lines at once.' },
+  { id: 'tetris', title: 'Quad Clear!', desc: 'Clear 4 lines at once.' },
   { id: 'shop_swap', title: 'Deck Doctor', desc: 'Complete a shop card swap.' },
   { id: 'fortify_3', title: 'Bunker Mindset', desc: 'Fortify base 3 times in one run.' },
   { id: 'daily_run', title: 'Daily Defender', desc: 'Finish a daily seeded run (win or lose).' },
-  { id: 'brutal_win', title: 'Iron Tetris', desc: 'Win on Brutal difficulty.' },
+  { id: 'brutal_win', title: 'Iron Stack', desc: 'Win on Brutal difficulty.' },
   { id: 'kills_500', title: 'Exterminator', desc: 'Score 500+ kills in one run.' },
   { id: 'win_classic', title: 'Classic Victor', desc: 'Win on Classic mode.' },
   { id: 'win_straights', title: 'Line Rider', desc: 'Win Straights Only mode.' },
@@ -39,7 +39,12 @@ function loadAchievements() {
 }
 
 function saveAchievements(map) {
-  localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(map));
+  const json = JSON.stringify(map);
+  if (typeof Platform !== 'undefined' && Platform.persistKey) {
+    Platform.persistKey(ACHIEVEMENTS_STORAGE_KEY, json);
+  } else {
+    localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, json);
+  }
 }
 
 function unlockAchievement(id) {
@@ -49,6 +54,9 @@ function unlockAchievement(id) {
   if (!def) return null;
   map[id] = { at: new Date().toISOString() };
   saveAchievements(map);
+  if (typeof Platform !== 'undefined' && Platform.unlockAchievement) {
+    Platform.unlockAchievement(id);
+  }
   return def;
 }
 

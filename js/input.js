@@ -64,11 +64,14 @@ class Input {
 
   _clientToGrid(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return { gx: 0, gy: 0 };
     const sx = (clientX - rect.left) / rect.width * this.canvas.width;
     const sy = (clientY - rect.top) / rect.height * this.canvas.height;
+    const cellW = this.canvas.width / CONFIG.GRID_W;
+    const cellH = this.canvas.height / CONFIG.GRID_H;
     return {
-      gx: Math.floor(sx / CONFIG.CELL_PX),
-      gy: Math.floor(sy / CONFIG.CELL_PX),
+      gx: Math.floor(sx / cellW),
+      gy: Math.floor(sy / cellH),
     };
   }
 

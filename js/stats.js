@@ -23,7 +23,12 @@ function loadLifetimeStats() {
 }
 
 function saveLifetimeStats(stats) {
-  localStorage.setItem(LIFETIME_STATS_KEY, JSON.stringify(stats));
+  const json = JSON.stringify(stats);
+  if (typeof Platform !== 'undefined' && Platform.persistKey) {
+    Platform.persistKey(LIFETIME_STATS_KEY, json);
+  } else {
+    localStorage.setItem(LIFETIME_STATS_KEY, json);
+  }
 }
 
 function createRunStats() {

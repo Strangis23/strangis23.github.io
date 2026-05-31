@@ -101,7 +101,12 @@ function saveHighScores(list) {
     .slice()
     .sort((a, b) => (b.at || '').localeCompare(a.at || ''))
     .slice(0, HIGHSCORES_MAX_ENTRIES);
-  localStorage.setItem(HIGHSCORES_STORAGE_KEY, JSON.stringify(trimmed));
+  const json = JSON.stringify(trimmed);
+  if (typeof Platform !== 'undefined' && Platform.persistKey) {
+    Platform.persistKey(HIGHSCORES_STORAGE_KEY, json);
+  } else {
+    localStorage.setItem(HIGHSCORES_STORAGE_KEY, json);
+  }
   return trimmed;
 }
 
@@ -130,7 +135,12 @@ function loadHighScorePrefs() {
 
 function saveHighScorePrefs(prefs) {
   const next = { ...loadHighScorePrefs(), ...prefs };
-  localStorage.setItem(HIGHSCORES_PREFS_KEY, JSON.stringify(next));
+  const json = JSON.stringify(next);
+  if (typeof Platform !== 'undefined' && Platform.persistKey) {
+    Platform.persistKey(HIGHSCORES_PREFS_KEY, json);
+  } else {
+    localStorage.setItem(HIGHSCORES_PREFS_KEY, json);
+  }
   return next;
 }
 
@@ -183,7 +193,11 @@ function isNewTopScore({ wave, score }, topN = HIGHSCORES_TOP_N) {
 }
 
 function clearHighScores() {
-  localStorage.removeItem(HIGHSCORES_STORAGE_KEY);
+  if (typeof Platform !== 'undefined' && Platform.persistRemove) {
+    Platform.persistRemove(HIGHSCORES_STORAGE_KEY);
+  } else {
+    localStorage.removeItem(HIGHSCORES_STORAGE_KEY);
+  }
 }
 
 function formatHighScoreDate(iso) {

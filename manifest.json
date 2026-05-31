@@ -1,7 +1,7 @@
 {
-  "name": "Tetris Tower Defense",
-  "short_name": "TTD",
-  "description": "Build defenses with Tetris pieces and survive 100 waves.",
+  "name": "Stackwave Defense",
+  "short_name": "SWD",
+  "description": "Build defenses with polyomino modules and survive 100 waves.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b1020",
