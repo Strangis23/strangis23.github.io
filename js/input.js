@@ -11,13 +11,12 @@ class Input {
     this.repeatTimers = {};
 
     this.mouseGrid = null;
-    this._touchCoarse = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
     this._touchPointerId = null;
     this._touchStart = null;
     this._touchMoved = false;
     this._suppressClickUntil = 0;
     this._tapMaxPx = 14;
-    this._swipeMinPx = 24;
+    this._swipeMinPx = 28;
     this._tapMaxMs = 350;
 
     this._keyToAction = {
@@ -37,12 +36,10 @@ class Input {
     canvas.addEventListener('mouseleave', () => { this.mouseGrid = null; });
     canvas.addEventListener('click', (e) => this.onClick(e));
 
-    if (this._touchCoarse) {
-      canvas.addEventListener('pointerdown', (e) => this.onTouchPointerDown(e));
-      canvas.addEventListener('pointermove', (e) => this.onTouchPointerMove(e));
-      canvas.addEventListener('pointerup', (e) => this.onTouchPointerUp(e));
-      canvas.addEventListener('pointercancel', (e) => this.onTouchPointerUp(e));
-    }
+    canvas.addEventListener('pointerdown', (e) => this.onTouchPointerDown(e));
+    canvas.addEventListener('pointermove', (e) => this.onTouchPointerMove(e));
+    canvas.addEventListener('pointerup', (e) => this.onTouchPointerUp(e));
+    canvas.addEventListener('pointercancel', (e) => this.onTouchPointerUp(e));
 
     setInterval(() => this.tick(0.016), 16);
   }
@@ -113,9 +110,11 @@ class Input {
     if (e.pointerType !== 'touch') return;
     if (!this.canActOnPiece()) return;
     if (this._touchPointerId != null) return;
+    e.preventDefault();
     this._touchPointerId = e.pointerId;
     this._touchStart = { x: e.clientX, y: e.clientY, t: performance.now() };
     this._touchMoved = false;
+    try { this.canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
   }
 
   onTouchPointerMove(e) {
@@ -127,34 +126,41 @@ class Input {
 
   onTouchPointerUp(e) {
     if (e.pointerId !== this._touchPointerId || !this._touchStart) return;
+    e.preventDefault();
     const dx = e.clientX - this._touchStart.x;
     const dy = e.clientY - this._touchStart.y;
     const dt = performance.now() - this._touchStart.t;
     this._touchPointerId = null;
     this._touchStart = null;
     this._suppressClickUntil = Date.now() + 400;
+    try { this.canvas.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
 
     if (!this.canActOnPiece()) return;
 
     if (!this._touchMoved && dt < this._tapMaxMs) {
       if (this.tryRepairAt(e.clientX, e.clientY)) {
         this._haptic(6);
-        return;
       }
-      this.performAction('rotate');
-      this._haptic(8);
       return;
     }
 
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) >= this._swipeMinPx) {
-      this.performAction(dx < 0 ? 'left' : 'right');
-      this._haptic(6);
+    const adx = Math.abs(dx);
+    const ady = Math.abs(dy);
+    if (adx < this._swipeMinPx && ady < this._swipeMinPx) return;
+
+    if (ady >= adx) {
+      if (dy <= -this._swipeMinPx) {
+        this.performAction('rotate');
+        this._haptic(8);
+      } else if (dy >= this._swipeMinPx) {
+        this.performAction('down');
+        this._haptic(6);
+      }
       return;
     }
-    if (dy >= this._swipeMinPx && dy > Math.abs(dx)) {
-      this.performAction('down');
-      this._haptic(6);
-    }
+
+    this.performAction(dx < 0 ? 'left' : 'right');
+    this._haptic(6);
   }
 
   _haptic(ms) {

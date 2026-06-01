@@ -267,24 +267,17 @@ strong {
 }
 
 .mobile-group-wave {
-  display: none;
+  display: flex;
   justify-content: center;
   align-items: center;
   gap: 10px;
   width: 100%;
 }
 
-.mobile-controls.mode-wave .mobile-group-build {
-  display: none;
-}
-
-.mobile-controls.mode-wave .mobile-group-wave {
-  display: flex;
-}
-
 .mobile-controls .mob-btn {
   pointer-events: auto;
   touch-action: manipulation;
+  min-height: 44px;
   -webkit-tap-highlight-color: transparent;
   min-width: 44px;
   min-height: 44px;
@@ -393,6 +386,7 @@ strong {
 
 #game-canvas {
   display: block;
+  touch-action: none;
   image-rendering: pixelated;
   width: auto;
   height: auto;

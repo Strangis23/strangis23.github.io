@@ -1,0 +1,13 @@
+{
+  "product": "Stackwave Defense",
+  "version": "1.0.0",
+  "branch": "main",
+  "builtAt": "2026-06-01T05:29:48Z",
+  "downloads": [
+    {
+      "file": "stackwave-defense-1.0.0-web.zip",
+      "sizeBytes": 8350542,
+      "sha256": "3a5b91eb8e5e1b0734bfb28d0ec39320888b06964fb5d6c9c18ed52a09a457a7"
+    }
+  ]
+}

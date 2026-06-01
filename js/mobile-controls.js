@@ -1,4 +1,4 @@
-// Optional on-screen touch controls (build pad, wave utilities, pause).
+// Optional wave-phase overlay (pause / speed). Piece control is swipe-on-canvas (see input.js).
 class MobileControls {
   constructor(game, input, canvasWrap) {
     this.game = game;
@@ -39,20 +39,12 @@ class MobileControls {
   syncVisibility() {
     if (!this.root) return;
     const phase = this.game.phase;
-    const playable =
-      phase === 'BUILD' || phase === 'PLACING_BASE' || phase === 'WAVE';
-    const show = this.enabled && playable;
+    const show = this.enabled && phase === 'WAVE';
     this.root.classList.toggle('hidden', !show);
+    this.root.classList.toggle('mode-wave', show);
 
-    this.root.classList.remove('mode-build', 'mode-wave');
-    if (show) {
-      if (phase === 'WAVE') this.root.classList.add('mode-wave');
-      else this.root.classList.add('mode-build');
-    }
-
-    const buildActive = phase === 'BUILD' || phase === 'PLACING_BASE';
     if (this.canvasWrap) {
-      this.canvasWrap.classList.toggle('mobile-active', this.enabled && buildActive);
+      this.canvasWrap.classList.remove('mobile-active');
     }
 
     if (this.waveSpeedBtn) {
@@ -66,39 +58,16 @@ class MobileControls {
   _bindButtons() {
     if (!this.root) return;
     const globalActions = new Set(['pause', 'waveSpeed']);
-    const repeat = new Set(['left', 'right', 'down']);
     for (const btn of this.root.querySelectorAll('[data-action]')) {
       const action = btn.dataset.action;
-      const start = (e) => {
+      btn.addEventListener('pointerdown', (e) => {
         if (e.button !== 0) return;
         e.preventDefault();
         if (!this.enabled) return;
-        if (globalActions.has(action)) {
-          this.input.performAction(action);
-          if (action === 'waveSpeed') this.syncVisibility();
-          return;
-        }
-        if (!this.input.canActOnPiece()) return;
-        if (repeat.has(action)) {
-          btn.setPointerCapture(e.pointerId);
-          btn.classList.add('mob-btn-held');
-          this.input.holdAction(action, true);
-        } else {
-          this.input.performAction(action);
-        }
-      };
-      const end = (e) => {
-        e.preventDefault();
-        if (!repeat.has(action)) return;
-        btn.classList.remove('mob-btn-held');
-        if (btn.hasPointerCapture(e.pointerId)) {
-          btn.releasePointerCapture(e.pointerId);
-        }
-        this.input.holdAction(action, false);
-      };
-      btn.addEventListener('pointerdown', start);
-      btn.addEventListener('pointerup', end);
-      btn.addEventListener('pointercancel', end);
+        if (!globalActions.has(action)) return;
+        this.input.performAction(action);
+        if (action === 'waveSpeed') this.syncVisibility();
+      });
     }
   }
 }

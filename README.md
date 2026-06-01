@@ -4,6 +4,20 @@ A pure-vanilla HTML5 Canvas game that fuses polyomino stacking with a tower-defe
 
 No build tools required for the web version. Open `index.html` (or serve the folder over HTTP) and play.
 
+## Download (current branch)
+
+A pre-built **web** package for **`main`** is committed under [`downloads/`](downloads/):
+
+| Package | Download |
+| --- | --- |
+| **Web (offline)** — unzip and open `index.html` | [`stackwave-defense-1.0.0-web.zip`](downloads/stackwave-defense-1.0.0-web.zip) |
+
+Build info and SHA-256 checksum: [`downloads/manifest.json`](downloads/manifest.json). Refresh with `./scripts/package-downloads.sh`.
+
+When this repo is published to GitHub Pages, the same file is also at `https://strangis23.github.io/downloads/stackwave-defense-1.0.0-web.zip`.
+
+Linux and Windows desktop builds are not stored in the repo (too large for GitHub). Build them locally with `cd desktop && npm run build:linux` / `npm run build:win` — see [`desktop/README.md`](desktop/README.md) and [`downloads/README.md`](downloads/README.md).
+
 ## Steam / Desktop
 
 See [`desktop/README.md`](desktop/README.md) for the Electron wrapper, Steamworks integration, and build instructions (Windows + Linux / Steam Deck).
@@ -81,6 +95,7 @@ The starter `Pellet Gun` is intentionally weaker than late-game alternatives. Su
 - **?** (HUD) — open help (pauses the game; Esc or Close to resume)
 - **★** (HUD) — opens [highscores.html](highscores.html) showing your best run (wave + points)
 - Mouse hover — preview a placed cell's range circle
+- **Touch** — swipe on the board: left / right / down to move, up to rotate; tap a damaged cell to repair
 
 ## High scores
 
@@ -90,7 +105,7 @@ Runs are saved automatically when you win or lose. Tap **★** in the HUD to ope
 
 **Counters:** tower roles deal 1.5× damage to “weak” enemy types and 0.55× to “resist” types — e.g. sniper and piercer vs flyers; shooters are weak against flyers. See in-game help (?).
 
-On mobile, the board stays on top; deck and extra panels collapse under **▸** sections. Enable touch controls in the HUD when needed.
+On mobile, the board stays on top with tabbed HUD panels. **Swipe** the board to move pieces (left / right / down) or rotate (up); tap damaged cells to repair. Optional pause / speed buttons during waves can be enabled from the title screen.
 
 ## File Layout
 
@@ -98,6 +113,8 @@ On mobile, the board stays on top; deck and extra panels collapse under **▸** 
 index.html
 highscores.html
 styles.css
+downloads/        pre-built web + desktop packages (see downloads/README.md)
+scripts/          package-downloads.sh — refresh downloads/ for the current branch
 assets/fonts/     bundled Exo 2 + Orbitron (offline)
 desktop/          Electron + Steamworks wrapper
 steam/            Achievement API names + SteamPipe templates
