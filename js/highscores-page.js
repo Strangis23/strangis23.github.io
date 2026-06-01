@@ -75,28 +75,27 @@
     }
     achievementsList.innerHTML = '';
 
-    if (typeof getModeWinAchievementProgress === 'function') {
-      const modeWins = getModeWinAchievementProgress();
-      if (modeWins.length > 0) {
+    const groups = typeof getAchievementsGrouped === 'function'
+      ? getAchievementsGrouped()
+      : null;
+
+    if (groups && groups.length > 0) {
+      for (const group of groups) {
         const heading = document.createElement('li');
         heading.className = 'achievement-group-heading';
-        heading.textContent = 'Mode victories';
+        const unlockedInGroup = group.items.filter((a) => a.unlocked).length;
+        heading.textContent = `${group.label} (${unlockedInGroup}/${group.items.length})`;
         achievementsList.appendChild(heading);
-        appendAchievementItems(achievementsList, modeWins);
+        appendAchievementItems(achievementsList, group.items);
       }
+      return;
     }
 
-    const modeIds = typeof MODE_WIN_ACHIEVEMENT_IDS !== 'undefined'
-      ? new Set(MODE_WIN_ACHIEVEMENT_IDS)
-      : new Set();
-    const general = progress.filter((a) => !modeIds.has(a.id));
-    if (general.length > 0) {
-      const heading = document.createElement('li');
-      heading.className = 'achievement-group-heading';
-      heading.textContent = 'General';
-      achievementsList.appendChild(heading);
-      appendAchievementItems(achievementsList, general);
-    }
+    const heading = document.createElement('li');
+    heading.className = 'achievement-group-heading';
+    heading.textContent = 'Achievements';
+    achievementsList.appendChild(heading);
+    appendAchievementItems(achievementsList, progress);
   }
 
   function renderLifetimeStats() {
@@ -104,12 +103,17 @@
     const s = loadLifetimeStats();
     const winRate = s.gamesPlayed > 0 ? Math.round((s.wins / s.gamesPlayed) * 100) : 0;
     lifetimeStatsEl.innerHTML = `
-      <div>Games played: ${s.gamesPlayed}</div>
-      <div>Wins: ${s.wins} (${winRate}%)</div>
+      <div>Games played: ${s.gamesPlayed.toLocaleString()}</div>
+      <div>Wins: ${s.wins.toLocaleString()} (${winRate}%)</div>
       <div>Total points earned: ${(s.totalPointsAccumulated || 0).toLocaleString()}</div>
-      <div>Total kills: ${s.totalKills.toLocaleString()}</div>
-      <div>Total line clears: ${s.totalLineClears}</div>
-      <div>Best wave: ${s.bestWave}</div>
+      <div>Total kills: ${(s.totalKills || 0).toLocaleString()}</div>
+      <div>Elite kills: ${(s.totalEliteKills || 0).toLocaleString()}</div>
+      <div>Line clears: ${(s.totalLineClears || 0).toLocaleString()} (${(s.totalLinesCleared || 0).toLocaleString()} rows)</div>
+      <div>Quad clears: ${(s.totalQuadClears || 0).toLocaleString()}</div>
+      <div>Waves cleared: ${(s.totalWavesCleared || 0).toLocaleString()}</div>
+      <div>Best wave reached: ${s.bestWave}</div>
+      <div>Shop swaps: ${(s.totalShopSwaps || 0).toLocaleString()} · Fortifies: ${(s.totalBaseFortifies || 0).toLocaleString()}</div>
+      <div>Pieces placed: ${(s.totalPiecesPlaced || 0).toLocaleString()} · Holds: ${(s.totalHolds || 0).toLocaleString()}</div>
     `;
   }
 

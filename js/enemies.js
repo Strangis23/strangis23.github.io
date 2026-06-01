@@ -360,7 +360,9 @@ class Rusher extends Walker {
 }
 
 function makeEnemy(type, grid, wave, opts = {}) {
-  const col = Math.floor(Math.random() * grid.w);
+  const col = typeof opts.spawnCol === 'number'
+    ? Math.max(0, Math.min(grid.w - 1, Math.floor(opts.spawnCol)))
+    : Math.floor(Math.random() * grid.w);
   const x = col + 0.5, y = 0.4;
   let enemy;
   switch (type) {

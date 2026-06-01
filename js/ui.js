@@ -31,7 +31,16 @@ class UI {
 
     this.titleScreen = document.getElementById('title-screen');
     this.titlePlayBtn = document.getElementById('title-play-btn');
+    this.titleTutorialBtn = document.getElementById('title-tutorial-btn');
     this.titleSettingsBtn = document.getElementById('title-settings-btn');
+    this.tutorialPickerModal = document.getElementById('tutorial-picker-modal');
+    this.tutorialRoleGrid = document.getElementById('tutorial-role-grid');
+    this.tutorialPickerClose = document.getElementById('tutorial-picker-close');
+    this.tutorialOverlay = document.getElementById('tutorial-overlay');
+    this.tutorialOverlayTitle = document.getElementById('tutorial-overlay-title');
+    this.tutorialOverlayBody = document.getElementById('tutorial-overlay-body');
+    this.tutorialOverlayPrimary = document.getElementById('tutorial-overlay-primary');
+    this.tutorialOverlaySecondary = document.getElementById('tutorial-overlay-secondary');
     this.modeGrid = document.getElementById('mode-grid');
     this.selectedGameMode = 'classic';
 
@@ -59,7 +68,12 @@ class UI {
     this.settingsClose = document.getElementById('settings-close');
     this.settingsQuit = document.getElementById('settings-quit');
     this.settingsForm = document.getElementById('settings-form');
+    this.settingsFormMobile = document.getElementById('settings-form-mobile');
+    this.mobilePauseBtn = document.getElementById('mobile-pause-btn');
+    this.highscoresBtn = document.getElementById('highscores-btn');
+    this.hudHelpBody = document.getElementById('hud-help-body');
     this.settingsDisplaySection = document.getElementById('settings-display-section');
+    this.mobileMq = window.matchMedia('(max-width: 1100px), (hover: none) and (pointer: coarse)');
     this.settingsFullscreenBtn = document.getElementById('settings-fullscreen-btn');
     this.settingsMaximizeBtn = document.getElementById('settings-maximize-btn');
 
@@ -116,12 +130,29 @@ class UI {
         if (e.target === this.settingsModal) this.closeSettings();
       });
     }
+    const onSettingsChange = () => {
+      readSettingsFromForm();
+      if (typeof AudioEngine !== 'undefined') AudioEngine.applyVolumes();
+      this.onSettingsChanged();
+    };
     if (this.settingsForm) {
-      this.settingsForm.addEventListener('change', () => {
-        readSettingsFromForm(this.settingsForm);
-        if (typeof AudioEngine !== 'undefined') AudioEngine.applyVolumes();
+      this.settingsForm.addEventListener('change', onSettingsChange);
+      this.settingsForm.addEventListener('input', onSettingsChange);
+    }
+    if (this.settingsFormMobile) {
+      this.settingsFormMobile.addEventListener('change', onSettingsChange);
+      this.settingsFormMobile.addEventListener('input', onSettingsChange);
+    }
+    if (this.mobilePauseBtn) {
+      this.mobilePauseBtn.addEventListener('click', () => {
+        if (!this.isInActiveRun()) return;
+        this.game.togglePause();
+        this.syncMobilePauseBtn();
       });
     }
+    window.addEventListener('ttd-wave-speed-changed', () => this.syncWaveSpeedRadios());
+    window.addEventListener('ttd-settings-changed', () => this.syncWaveSpeedRadios());
+    window.addEventListener('ttd-pause-changed', () => this.syncMobilePauseBtn());
     if (typeof Platform !== 'undefined' && Platform.canControlWindow) {
       if (this.settingsDisplaySection) this.settingsDisplaySection.classList.remove('hidden');
       if (this.settingsFullscreenBtn) {
@@ -143,6 +174,26 @@ class UI {
     if (this.titlePlayBtn) {
       this.titlePlayBtn.addEventListener('click', () => this.startFromTitle());
     }
+    if (this.titleTutorialBtn) {
+      this.titleTutorialBtn.addEventListener('click', () => this.openTutorialPicker());
+    }
+    if (this.tutorialPickerClose) {
+      this.tutorialPickerClose.addEventListener('click', () => this.closeTutorialPicker());
+    }
+    if (this.tutorialPickerModal) {
+      this.tutorialPickerModal.addEventListener('click', (e) => {
+        if (e.target === this.tutorialPickerModal) this.closeTutorialPicker();
+      });
+    }
+    if (this.tutorialOverlayPrimary) {
+      this.tutorialOverlayPrimary.addEventListener('click', () => this.onTutorialPrimary());
+    }
+    if (this.tutorialOverlaySecondary) {
+      this.tutorialOverlaySecondary.addEventListener('click', () => this.onTutorialSecondary());
+    }
+    window.addEventListener('ttd-tutorial-step', (e) => this.onTutorialStep(e.detail));
+    window.addEventListener('ttd-tutorial-exit', () => this.onTutorialExit());
+    this.buildTutorialRoleGrid();
     if (this.titleScreen) {
       this.titleScreen.addEventListener('click', () => {
         if (typeof AudioEngine !== 'undefined') AudioEngine.unlock();
@@ -180,6 +231,21 @@ class UI {
         this.closeHelp();
         return;
       }
+      if (this.game.tutorialActive) {
+        e.preventDefault();
+        if (this.tutorialOverlay && !this.tutorialOverlay.classList.contains('hidden')) {
+          this.onTutorialSecondary();
+        } else {
+          this.game.exitTutorial();
+        }
+        return;
+      }
+      const pickerOpen = this.tutorialPickerModal && !this.tutorialPickerModal.classList.contains('hidden');
+      if (pickerOpen) {
+        e.preventDefault();
+        this.closeTutorialPicker();
+        return;
+      }
       const shopOpen = this.shopModal && !this.shopModal.classList.contains('hidden');
       if (this.game.phase === 'SHOP' && shopOpen && this.game.hasPendingShopBuy()) {
         e.preventDefault();
@@ -188,8 +254,70 @@ class UI {
     });
 
     this.initHudCollapsible();
+    this.initMobileHelpPanel();
     this.initMobileTabs();
+    this.syncHudChrome();
     if (typeof AudioEngine !== 'undefined') AudioEngine._syncMuteButtons();
+  }
+
+  isMobileHud() {
+    return this.mobileMq.matches && !document.documentElement.classList.contains('platform-desktop');
+  }
+
+  isInActiveRun() {
+    return !document.body.classList.contains('title-visible')
+      && this.game.phase !== 'GAMEOVER'
+      && this.game.phase !== 'WIN'
+      && this.game.phase !== 'IDLE';
+  }
+
+  syncHudChrome() {
+    const inRun = this.isInActiveRun();
+    const onTitle = document.body.classList.contains('title-visible');
+    if (this.highscoresBtn) {
+      this.highscoresBtn.classList.toggle('hidden', !onTitle);
+    }
+    document.body.classList.toggle('hud-run-active', inRun);
+    this.syncMobilePauseBtn();
+    this.syncWaveSpeedRadios();
+  }
+
+  initMobileHelpPanel() {
+    const src = this.helpModal?.querySelector('.help-body');
+    if (!src || !this.hudHelpBody || this.hudHelpBody.dataset.cloned) return;
+    this.hudHelpBody.innerHTML = src.innerHTML;
+    this.hudHelpBody.dataset.cloned = '1';
+  }
+
+  syncMobilePauseBtn() {
+    if (!this.mobilePauseBtn) return;
+    const show = this.isInActiveRun();
+    this.mobilePauseBtn.classList.toggle('hidden', !show);
+    if (!show) return;
+    this.mobilePauseBtn.textContent = this.game.paused ? 'Resume' : 'Pause';
+  }
+
+  syncWaveSpeedRadios() {
+    const speed = this.game.waveSpeed ?? getSetting('defaultWaveSpeed') ?? 3;
+    for (const el of document.querySelectorAll('[data-setting="defaultWaveSpeed"]')) {
+      if (el.type === 'radio') el.checked = Number(el.value) === Number(speed);
+    }
+  }
+
+  onSettingsChanged() {
+    const speed = getSetting('defaultWaveSpeed');
+    if (speed != null && this.isInActiveRun()) {
+      this.game.setWaveSpeed(speed);
+    }
+    this.syncWaveSpeedRadios();
+  }
+
+  pauseForMobileTab() {
+    if (!this.isInActiveRun() || this.game.paused) return;
+    this.game.paused = true;
+    this.game.input?.clearHeld?.();
+    this.game.setBanner('Paused', 99);
+    this.syncMobilePauseBtn();
   }
 
   initMobileTabs() {
@@ -197,14 +325,21 @@ class UI {
     const tabs = document.getElementById('mobile-hud-tabs');
     if (!gameRoot || !tabs) return;
 
-    const mobileMq = window.matchMedia('(max-width: 1100px), (hover: none) and (pointer: coarse)');
-
     const setTab = (tab) => {
+      const prev = gameRoot.dataset.mobileTab || 'game';
+      if (tab !== 'game' && prev === 'game') {
+        this.pauseForMobileTab();
+      }
       gameRoot.dataset.mobileTab = tab;
       for (const btn of tabs.querySelectorAll('.mobile-hud-tab')) {
         const active = btn.dataset.tab === tab;
         btn.classList.toggle('active', active);
         btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      }
+      if (tab === 'settings') {
+        applySettingsToForm();
+        this.syncWaveSpeedRadios();
+        this.syncMobilePauseBtn();
       }
       if (typeof window.TTD?.fitGameCanvas === 'function') {
         requestAnimationFrame(() => window.TTD.fitGameCanvas());
@@ -218,7 +353,7 @@ class UI {
     });
 
     const syncDefault = () => {
-      if (!mobileMq.matches || document.documentElement.classList.contains('platform-desktop')) {
+      if (!this.isMobileHud()) {
         gameRoot.dataset.mobileTab = 'game';
         return;
       }
@@ -226,7 +361,7 @@ class UI {
     };
 
     syncDefault();
-    mobileMq.addEventListener('change', syncDefault);
+    this.mobileMq.addEventListener('change', syncDefault);
   }
 
   initHudCollapsible() {
@@ -255,9 +390,27 @@ class UI {
   }
 
   openSettings() {
-    if (!this.settingsModal || !this.settingsForm) return;
-    applySettingsToForm(this.settingsForm);
+    if (this.isMobileHud() && this.isInActiveRun()) {
+      const gameRoot = document.getElementById('game-root');
+      const tabs = document.getElementById('mobile-hud-tabs');
+      if (gameRoot) gameRoot.dataset.mobileTab = 'settings';
+      if (tabs) {
+        for (const btn of tabs.querySelectorAll('.mobile-hud-tab')) {
+          const active = btn.dataset.tab === 'settings';
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        }
+      }
+      applySettingsToForm();
+      this.syncWaveSpeedRadios();
+      this.syncMobilePauseBtn();
+      requestAnimationFrame(() => window.TTD?.fitGameCanvas?.());
+      return;
+    }
+    if (!this.settingsModal) return;
+    applySettingsToForm();
     this.syncDisplayButtons();
+    this.syncWaveSpeedRadios();
     this.settingsModal.classList.remove('hidden');
     if (typeof AudioEngine !== 'undefined') AudioEngine.unlock();
   }
@@ -318,6 +471,9 @@ class UI {
     this.selectGameMode(this.selectedGameMode || 'classic');
     if (this.titleScreen) this.titleScreen.classList.remove('hidden');
     document.body.classList.add('title-visible');
+    const gameRoot = document.getElementById('game-root');
+    if (gameRoot) gameRoot.dataset.mobileTab = 'game';
+    this.syncHudChrome();
     if (typeof AudioEngine !== 'undefined') {
       AudioEngine.setMusicPhase('menu');
     }
@@ -326,13 +482,141 @@ class UI {
   hideTitleScreen() {
     if (this.titleScreen) this.titleScreen.classList.add('hidden');
     document.body.classList.remove('title-visible');
+    this.syncHudChrome();
   }
 
   startFromTitle() {
     if (typeof AudioEngine !== 'undefined') AudioEngine.unlock();
     this.hideTitleScreen();
     this.game.startNewRun(this.getRunStartOptions());
+    this.syncHudChrome();
+    this.syncWaveSpeedRadios();
     requestAnimationFrame(() => window.TTD?.fitGameCanvas?.());
+  }
+
+  buildTutorialRoleGrid() {
+    if (!this.tutorialRoleGrid || typeof ROLE_TUTORIAL_ORDER === 'undefined') return;
+    this.tutorialRoleGrid.innerHTML = '';
+    for (const role of ROLE_TUTORIAL_ORDER) {
+      const def = typeof getRoleTutorial === 'function' ? getRoleTutorial(role) : null;
+      if (!def) continue;
+      const color = CONFIG.ROLE_COLORS[role] || '#94a3b8';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tutorial-role-btn';
+      btn.dataset.role = role;
+      btn.innerHTML =
+        `<span class="tutorial-role-swatch" style="background:${color}"></span>` +
+        `<span class="tutorial-role-glyph">${def.glyph}</span>` +
+        `<span class="tutorial-role-name">${def.title}</span>`;
+      btn.addEventListener('click', () => this.startTutorialRole(role));
+      this.tutorialRoleGrid.appendChild(btn);
+    }
+  }
+
+  openTutorialPicker() {
+    if (typeof AudioEngine !== 'undefined') AudioEngine.unlock();
+    if (this.tutorialPickerModal) this.tutorialPickerModal.classList.remove('hidden');
+  }
+
+  closeTutorialPicker() {
+    if (this.tutorialPickerModal) this.tutorialPickerModal.classList.add('hidden');
+  }
+
+  startTutorialRole(role) {
+    if (typeof AudioEngine !== 'undefined') AudioEngine.unlock();
+    this.closeTutorialPicker();
+    this.hideOverlay();
+    this.hideTitleScreen();
+    this.game.startRoleTutorial(role);
+    this.syncHudChrome();
+    this.syncWaveSpeedRadios();
+    requestAnimationFrame(() => window.TTD?.fitGameCanvas?.());
+  }
+
+  showTutorialOverlay({ title, bodyHtml, primaryLabel, secondaryLabel, showSecondary }) {
+    if (!this.tutorialOverlay) return;
+    if (this.tutorialOverlayTitle) this.tutorialOverlayTitle.textContent = title;
+    if (this.tutorialOverlayBody) this.tutorialOverlayBody.innerHTML = bodyHtml;
+    if (this.tutorialOverlayPrimary) this.tutorialOverlayPrimary.textContent = primaryLabel || 'Continue';
+    if (this.tutorialOverlaySecondary) {
+      this.tutorialOverlaySecondary.textContent = secondaryLabel || 'Back to Title';
+      this.tutorialOverlaySecondary.classList.toggle('hidden', !showSecondary);
+    }
+    this.tutorialOverlay.classList.remove('hidden');
+  }
+
+  hideTutorialOverlay() {
+    if (this.tutorialOverlay) this.tutorialOverlay.classList.add('hidden');
+  }
+
+  onTutorialStep(detail) {
+    if (!detail || !detail.role) return;
+    const def = typeof getRoleTutorial === 'function' ? getRoleTutorial(detail.role) : null;
+    if (!def) return;
+    const color = CONFIG.ROLE_COLORS[detail.role] || '#94a3b8';
+    if (detail.step === 'intro') {
+      const match = typeof getRoleMatchupSummary === 'function'
+        ? getRoleMatchupSummary(detail.role)
+        : null;
+      let body = `<p class="tutorial-role-tag" style="color:${color}">${def.glyph} ${def.title}</p>`;
+      body += `<p>${def.intro}</p>`;
+      if (match && (match.strong.length || match.weak.length)) {
+        body += '<p class="muted">After the demo wave you will see full matchup strengths and weaknesses.</p>';
+      }
+      this.showTutorialOverlay({
+        title: `${def.title} — Overview`,
+        bodyHtml: body,
+        primaryLabel: 'Place demo tower',
+        secondaryLabel: 'Back to Title',
+        showSecondary: true,
+      });
+      return;
+    }
+    if (detail.step === 'place' || detail.step === 'wave') {
+      this.hideTutorialOverlay();
+      return;
+    }
+    if (detail.step === 'outro') {
+      const outro = typeof formatTutorialOutroHtml === 'function'
+        ? formatTutorialOutroHtml(detail.role)
+        : '';
+      const next = typeof nextTutorialRole === 'function' ? nextTutorialRole(detail.role) : null;
+      this.showTutorialOverlay({
+        title: `${def.title} — Strengths & Weaknesses`,
+        bodyHtml: `<p class="muted">${def.placementNote}</p>${outro}`,
+        primaryLabel: next ? `Next: ${getRoleTutorial(next).title}` : 'Finish',
+        secondaryLabel: 'Back to Title',
+        showSecondary: true,
+      });
+    }
+  }
+
+  onTutorialPrimary() {
+    if (!this.game.tutorialActive) {
+      this.hideTutorialOverlay();
+      return;
+    }
+    const step = this.game.tutorialStep;
+    if (step === 'intro' || step === 'outro') {
+      this.hideTutorialOverlay();
+      this.game.advanceTutorial();
+      if (!this.game.tutorialActive) this.onTutorialExit();
+    }
+  }
+
+  onTutorialSecondary() {
+    this.hideTutorialOverlay();
+    if (this.game.tutorialActive) this.game.exitTutorial();
+    else this.closeTutorialPicker();
+    this.onTutorialExit();
+  }
+
+  onTutorialExit() {
+    this.hideTutorialOverlay();
+    this.closeTutorialPicker();
+    this.showTitleScreen();
+    this.syncHudChrome();
   }
 
   updateTitleBestLine() {
@@ -679,9 +963,7 @@ class UI {
       const canHelp = game.phase !== 'IDLE' && game.phase !== 'GAMEOVER' && game.phase !== 'WIN';
       this.helpBtn.disabled = !canHelp;
     }
-    if (window.TTD?.mobileControls) {
-      window.TTD.mobileControls.syncVisibility();
-    }
+    this.syncHudChrome();
     this._updateRichPresence(game);
     // Re-render shop if open and points changed (so cost-based affordability stays fresh).
     if (game.phase === 'SHOP' && this.shopModal && !this.shopModal.classList.contains('hidden')) {
@@ -720,18 +1002,7 @@ class UI {
     this._lastDeckSig = sig;
     this.elDeckChips.innerHTML = '';
     for (const c of cards) {
-      const chip = document.createElement('div');
-      chip.className = 'deck-chip';
-      chip.dataset.rarity = c.rarity;
-      chip.dataset.shape = c.shape;
-      const label = document.createElement('span');
-      label.className = 'deck-chip-shape';
-      label.textContent = c.shape;
-      chip.appendChild(label);
-      const mark = document.createElement('span');
-      mark.className = 'role-mark';
-      mark.textContent = (ROLE_GLYPHS[c.role] || c.role[0]).slice(0, 1);
-      chip.appendChild(mark);
+      const chip = buildDeckChip(c, { interactive: false });
       chip.dataset.tooltip = `${c.name}\n${c.role} • ${c.rarity}\n${formatStats(c.stats)}`;
       this.elDeckChips.appendChild(chip);
     }
@@ -837,8 +1108,9 @@ function phaseLabel(phase, gameMode) {
   switch (phase) {
     case 'PLACING_BASE': label = 'Place Home Base'; break;
     case 'BUILD':        label = 'Build Phase'; break;
-    case 'WAVE':         label = 'Wave Phase'; break;
+    case 'WAVE':         label = gameMode?.id === 'tutorial' ? 'Tutorial Wave' : 'Wave Phase'; break;
     case 'SHOP':         label = 'Card Shop'; break;
+    case 'TUTORIAL':     label = 'Role Tutorial'; break;
     case 'GAMEOVER':     label = 'Game Over'; break;
     case 'WIN':          label = 'Victory'; break;
     default:             label = 'Idle';
@@ -863,24 +1135,94 @@ function formatStats(stats) {
   return parts.join(' ');
 }
 
-// Build a card UI element used by both the shop and the deck-pick panes.
-function makeShopDeckChip(card, onPick) {
-  const chip = document.createElement('button');
-  chip.type = 'button';
-  chip.className = 'deck-chip shop-deck-chip';
+const ROLE_DISPLAY_NAMES = {
+  wall: 'Wall',
+  shooter: 'Shooter',
+  sniper: 'Sniper',
+  splash: 'Splash',
+  slow: 'Slow',
+  gunner: 'Gunner',
+  piercer: 'Piercer',
+  multishot: 'Multi',
+};
+
+function cardChipStatLine(card) {
+  const s = card.stats || {};
+  switch (card.role) {
+    case 'wall':
+      return s.passiveIncome ? `HP ${s.hp} · +${s.passiveIncome}/w` : `HP ${s.hp}`;
+    case 'slow':
+      return s.damage
+        ? `Slow ${Math.round((s.slowFactor || 0) * 100)}% · ${s.damage} dmg`
+        : `Slow ${Math.round((s.slowFactor || 0) * 100)}%`;
+    case 'splash':
+      return `Dmg ${s.damage} · AoE ${s.splashRadius}`;
+    case 'gunner':
+      return `Dmg ${s.damage} · ${Number(s.fireRate).toFixed(2)}s`;
+    case 'multishot':
+      return `Dmg ${s.damage} · ×${s.multishot}`;
+    case 'piercer':
+      return `Dmg ${s.damage} · pierce ${s.pierce || 1}`;
+    case 'sniper':
+      return `Dmg ${s.damage} · rng ${s.range}`;
+    case 'shooter':
+    default:
+      return s.range ? `Dmg ${s.damage} · rng ${s.range}` : `Dmg ${s.damage}`;
+  }
+}
+
+function buildDeckChip(card, opts = {}) {
+  const interactive = opts.interactive !== false;
+  const chip = document.createElement(interactive ? 'button' : 'div');
+  if (interactive) chip.type = 'button';
+  chip.className = 'deck-chip' + (opts.shop ? ' shop-deck-chip' : '');
   chip.dataset.rarity = card.rarity;
   chip.dataset.shape = card.shape;
-  chip.title = `${card.name} — ${card.role} (${card.rarity})`;
-  const label = document.createElement('span');
-  label.className = 'deck-chip-shape';
-  label.textContent = card.shape;
-  chip.appendChild(label);
-  const mark = document.createElement('span');
-  mark.className = 'role-mark';
-  mark.textContent = (ROLE_GLYPHS[card.role] || card.role[0]).slice(0, 1);
-  chip.appendChild(mark);
-  chip.addEventListener('click', onPick);
+  chip.dataset.role = card.role;
+  const roleColor = CONFIG.ROLE_COLORS[card.role] || '#94a3b8';
+  chip.style.setProperty('--role-color', roleColor);
+  chip.style.borderLeftColor = roleColor;
+  chip.title = `${card.name} — ${ROLE_DISPLAY_NAMES[card.role] || card.role} (${card.rarity})\n${cardChipStatLine(card)}`;
+
+  const top = document.createElement('div');
+  top.className = 'deck-chip-top';
+  const shape = document.createElement('span');
+  shape.className = 'deck-chip-shape';
+  shape.textContent = card.shape;
+  const rarity = document.createElement('span');
+  rarity.className = 'deck-chip-rarity';
+  rarity.textContent = card.rarity.slice(0, 1);
+  rarity.title = card.rarity;
+  top.appendChild(shape);
+  top.appendChild(rarity);
+
+  const role = document.createElement('div');
+  role.className = 'deck-chip-role';
+  const glyph = document.createElement('span');
+  glyph.className = 'deck-chip-role-glyph';
+  glyph.textContent = ROLE_GLYPHS[card.role] || '•';
+  const roleName = document.createElement('span');
+  roleName.className = 'deck-chip-role-name';
+  roleName.textContent = ROLE_DISPLAY_NAMES[card.role] || card.role;
+  role.appendChild(glyph);
+  role.appendChild(roleName);
+
+  const stat = document.createElement('div');
+  stat.className = 'deck-chip-stat';
+  stat.textContent = cardChipStatLine(card);
+
+  chip.appendChild(top);
+  chip.appendChild(role);
+  chip.appendChild(stat);
+  if (typeof opts.onClick === 'function') {
+    chip.addEventListener('click', opts.onClick);
+  }
   return chip;
+}
+
+// Build a card UI element used by both the shop and the deck-pick panes.
+function makeShopDeckChip(card, onPick) {
+  return buildDeckChip(card, { shop: true, onClick: onPick });
 }
 
 function makeCardEl(card, opts = {}) {
@@ -907,9 +1249,14 @@ function makeCardEl(card, opts = {}) {
   if (!isRow) name.appendChild(shapeBadge);
   name.appendChild(document.createTextNode(card.name));
 
+  el.dataset.role = card.role;
+  const roleColor = CONFIG.ROLE_COLORS[card.role] || '#94a3b8';
+  el.style.setProperty('--role-color', roleColor);
+
   const roleLine = document.createElement('div');
   roleLine.className = 'role-line';
-  roleLine.textContent = `${ROLE_GLYPHS[card.role] || ''} ${card.role}`;
+  roleLine.style.color = roleColor;
+  roleLine.textContent = `${ROLE_GLYPHS[card.role] || ''} ${ROLE_DISPLAY_NAMES[card.role] || card.role}`;
 
   const stats = document.createElement('div');
   stats.className = 'stats';

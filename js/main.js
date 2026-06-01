@@ -21,7 +21,6 @@
   const ui = new UI(game);
   const input = new Input(game, canvas);
   const canvasWrap = document.getElementById('canvas-wrap');
-  const mobileControls = new MobileControls(game, input, canvasWrap);
 
   const natW = CONFIG.GRID_W * CONFIG.CELL_PX;
   const natH = CONFIG.GRID_H * CONFIG.CELL_PX;
@@ -29,11 +28,6 @@
 
   function viewportHeight() {
     return window.visualViewport?.height ?? window.innerHeight;
-  }
-
-  function mobileControlsReserve() {
-    if (!canvasWrap?.classList.contains('mobile-active')) return 0;
-    return 96;
   }
 
   function isMobileLayout() {
@@ -80,7 +74,7 @@
       const adH = adBanner && !adBanner.classList.contains('hidden')
         ? adBanner.offsetHeight
         : 0;
-      const chrome = adH + mobileControlsReserve() + mobileHeaderChrome() + padY + 16;
+      const chrome = adH + mobileHeaderChrome() + padY + 16;
       const maxByWidth = availW * (natH / natW);
       const maxByHeight = viewportHeight() - chrome;
       return {
@@ -146,7 +140,7 @@
   }
   requestAnimationFrame(fitGameCanvas);
 
-  window.TTD = { game, renderer, ui, input, mobileControls, CONFIG, fitGameCanvas };
+  window.TTD = { game, renderer, ui, input, CONFIG, fitGameCanvas };
   window.SWD = window.TTD;
 
   const dailyLabel = document.getElementById('daily-seed-label');
@@ -162,7 +156,8 @@
       Platform.runSteamCallbacks();
     }
     try {
-      if (!game.paused) game.update(dt);
+      const tutorialPlaceTick = game.tutorialActive && game.tutorialStep === 'place';
+      if (!game.paused || tutorialPlaceTick) game.update(dt);
     } catch (err) {
       console.error('game.update threw:', err);
     }

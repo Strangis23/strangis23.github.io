@@ -125,14 +125,21 @@ const CONFIG = {
     flyer:  { dmg: 0.4, rate: 0.85 },
   },
 
-  // Tower role vs enemy type: weak = bonus damage, resist = reduced damage.
+  // Tower role vs enemy type: weak = bonus damage (good counter), resist = reduced damage.
+  // Design: align with movement (flyer), durability (brute/boss/shielded), and speed (rusher).
   ENEMY_MATCHUPS: {
-    walker: { weak: ['gunner', 'shooter'], resist: ['splash', 'slow'] },
-    flyer:  { weak: ['sniper', 'piercer'], resist: ['shooter', 'splash'] },
-    brute:  { weak: ['piercer', 'splash'], resist: ['sniper', 'gunner'] },
-    boss:   { weak: ['multishot', 'slow'], resist: ['shooter', 'gunner'] },
-    shielded: { weak: ['splash', 'multishot'], resist: ['shooter', 'piercer'] },
-    rusher: { weak: ['slow', 'sniper'], resist: ['gunner', 'shooter'] },
+    // Ground swarms: sustained fire and AoE; slow aura rarely kills; sniper overkill per shot.
+    walker:   { weak: ['gunner', 'shooter', 'splash', 'multishot'], resist: ['slow', 'sniper'] },
+    // Ignores walls — precision and pierce; spread and ground-target AoE struggle.
+    flyer:    { weak: ['sniper', 'piercer'], resist: ['shooter', 'splash', 'multishot'] },
+    // High HP wall-breaker: burst, pierce lines, and sniper focus-fire; chip DPS is weak.
+    brute:    { weak: ['piercer', 'splash', 'sniper'], resist: ['gunner', 'shooter', 'multishot'] },
+    // Massive HP elite: stacking shots and slow kiting; chip roles and wasted AoE/pierce.
+    boss:     { weak: ['multishot', 'slow', 'sniper'], resist: ['shooter', 'gunner', 'splash', 'piercer'] },
+    // Shield layer: many hits break shields; single heavy shots are inefficient.
+    shielded: { weak: ['splash', 'multishot', 'gunner'], resist: ['shooter', 'piercer', 'sniper'] },
+    // Very fast — slow and high fire-rate accuracy; slow single-target may miss.
+    rusher:   { weak: ['slow', 'sniper', 'gunner'], resist: ['shooter', 'piercer', 'multishot'] },
   },
   MATCHUP_WEAK_MULT: 1.5,
   MATCHUP_RESIST_MULT: 0.55,

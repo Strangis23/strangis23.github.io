@@ -47,6 +47,11 @@ class Game {
     this.dailySeed = false;
     this.rng = null;
     this.screenShake = null;
+    this.tutorialActive = false;
+    this.tutorialRole = null;
+    this.tutorialStep = null;
+    this._tutorialPlaceTimer = 0;
+    this._tutorialWaveElapsed = 0;
   }
 
   // Swap the active piece with the held card (or draw a new one if hold is empty).
@@ -72,6 +77,10 @@ class Game {
     if (this.activePiece.collides(this.grid)) {
       this.lose('Top-out: blocks reached the spawn area.');
       return false;
+    }
+    if (this.runStats) this.runStats.holdsUsed += 1;
+    if (typeof notifyAchievementUnlock === 'function') {
+      notifyAchievementUnlock(this, 'hold_once');
     }
     return true;
   }
@@ -111,14 +120,25 @@ class Game {
       const name = (ROLE_NAMES[cell.role] && ROLE_NAMES[cell.role][cell.rarity]) || cell.role;
       this.setBanner(`${name} repaired (-${cost})`, 0.6);
     }
+    if (this.runStats) {
+      this.runStats.repairs += 1;
+      this.runStats.repairSpend += cost;
+    }
     return { ok: true, spent: cost };
   }
 
   cycleWaveSpeed() {
     const steps = CONFIG.WAVE_SPEED_STEPS || [1, 2, 3];
     const idx = Math.max(0, steps.indexOf(this.waveSpeed));
-    this.waveSpeed = steps[(idx + 1) % steps.length];
-    if (this.phase === 'WAVE') this.setBanner(`${this.waveSpeed}x`, 0.5);
+    this.setWaveSpeed(steps[(idx + 1) % steps.length]);
+  }
+
+  setWaveSpeed(speed) {
+    const steps = CONFIG.WAVE_SPEED_STEPS || [1, 2, 3];
+    const n = steps.includes(speed) ? speed : steps[0];
+    this.waveSpeed = n;
+    if (this.phase === 'WAVE') this.setBanner(`${n}x`, 0.5);
+    window.dispatchEvent(new CustomEvent('ttd-wave-speed-changed', { detail: { waveSpeed: n } }));
   }
 
   startNewRun(opts = {}) {
@@ -138,12 +158,112 @@ class Game {
     if (this.difficulty.bottomWallFill) {
       applyBrutalBottomWallFill(this.grid, rngFn);
     }
+    const defSpeed = typeof getSetting === 'function'
+      ? getSetting('defaultWaveSpeed')
+      : (CONFIG.DEFAULT_WAVE_SPEED ?? 3);
+    this.waveSpeed = defSpeed;
     this.phase = 'PLACING_BASE';
     this.piecesLeftThisBuild = 1;
     this.spawnNextPiece();
     const modeLabel = this.gameMode.name && this.gameMode.id !== 'classic' ? `${this.gameMode.name} · ` : '';
     this.setBanner(`${modeLabel}Place Your Home Base`, 1.6);
     if (typeof AudioEngine !== 'undefined') AudioEngine.setMusicPhase('build');
+  }
+
+  startRoleTutorial(role) {
+    const def = typeof getRoleTutorial === 'function' ? getRoleTutorial(role) : null;
+    if (!def) return;
+    this.reset();
+    this.tutorialActive = true;
+    this.tutorialRole = role;
+    this.tutorialStep = 'intro';
+    this.phase = 'TUTORIAL';
+    this.wave = 1;
+    this.score = 0;
+    this.baseHp = 0;
+    this.baseMaxHp = 0;
+    this.difficultyId = 'casual';
+    this.difficulty = CONFIG.DIFFICULTY_PRESETS.casual || CONFIG.DIFFICULTY_PRESETS.normal;
+    this.gameModeId = 'tutorial';
+    this.gameMode = { id: 'tutorial', name: 'Role Tutorial', shapes: null, shopEnabled: false };
+    this.deck = new Deck([], () => 0.5);
+    this.activePiece = null;
+    this.paused = true;
+    this.waveSpeed = CONFIG.DEFAULT_WAVE_SPEED ?? 3;
+    this._tutorialPlaceTimer = 0;
+    if (typeof AudioEngine !== 'undefined') {
+      AudioEngine.unlock?.();
+      AudioEngine.setMusicPhase('build');
+    }
+    window.dispatchEvent(new CustomEvent('ttd-tutorial-step', {
+      detail: { step: 'intro', role },
+    }));
+  }
+
+  advanceTutorial() {
+    if (!this.tutorialActive || !this.tutorialRole) return;
+    const role = this.tutorialRole;
+    if (this.tutorialStep === 'intro') {
+      this.tutorialStep = 'place';
+      this.phase = 'TUTORIAL';
+      if (typeof setupTutorialBoard === 'function') setupTutorialBoard(this, role);
+      const label = typeof tutorialRoleLabel === 'function' ? tutorialRoleLabel(role) : role;
+      this.setBanner(`${label} deployed — wave incoming…`, 2.2);
+      this._tutorialPlaceTimer = 2.4;
+      this.paused = false;
+      window.dispatchEvent(new CustomEvent('ttd-tutorial-step', {
+        detail: { step: 'place', role },
+      }));
+      return;
+    }
+    if (this.tutorialStep === 'outro') {
+      const next = typeof nextTutorialRole === 'function' ? nextTutorialRole(role) : null;
+      if (next) {
+        this.startRoleTutorial(next);
+      } else {
+        this.exitTutorial();
+      }
+      return;
+    }
+  }
+
+  startTutorialWave() {
+    if (!this.tutorialActive || !this.tutorialRole) return;
+    this.tutorialStep = 'wave';
+    this.phase = 'WAVE';
+    this.enemies = [];
+    this.clearCombatVisuals();
+    this.paused = false;
+    this.waveEnding = false;
+    this.waveEndTimer = 0;
+    this.waveStats = { kills: 0, points: 0, income: 0 };
+    this._tutorialWaveElapsed = 0;
+    const schedule = typeof composeTutorialWave === 'function'
+      ? composeTutorialWave(this.tutorialRole)
+      : [];
+    this.waveSpawner = { schedule, i: 0, t: 0 };
+    const label = typeof tutorialRoleLabel === 'function'
+      ? tutorialRoleLabel(this.tutorialRole)
+      : this.tutorialRole;
+    this.setBanner(`Demo wave — watch ${label}`, 2.0);
+    if (typeof AudioEngine !== 'undefined') {
+      AudioEngine.play('wave');
+      AudioEngine.setMusicPhase('wave');
+    }
+    window.dispatchEvent(new CustomEvent('ttd-tutorial-step', {
+      detail: { step: 'wave', role: this.tutorialRole },
+    }));
+  }
+
+  exitTutorial() {
+    this.tutorialActive = false;
+    this.tutorialRole = null;
+    this.tutorialStep = null;
+    this._tutorialPlaceTimer = 0;
+    this.reset();
+    this.phase = 'IDLE';
+    this.paused = false;
+    window.dispatchEvent(new CustomEvent('ttd-tutorial-exit'));
   }
 
   addPoints(amount) {
@@ -158,6 +278,7 @@ class Game {
 
   togglePause() {
     if (this.phase === 'GAMEOVER' || this.phase === 'WIN' || this.phase === 'IDLE') return;
+    if (this.tutorialActive && (this.tutorialStep === 'intro' || this.tutorialStep === 'outro')) return;
     if (this.helpOpen) {
       this.closeHelp();
       return;
@@ -169,6 +290,7 @@ class Game {
     } else {
       this.banner = null;
     }
+    window.dispatchEvent(new CustomEvent('ttd-pause-changed', { detail: { paused: this.paused } }));
   }
 
   openHelp() {
@@ -218,11 +340,24 @@ class Game {
     if (dmg <= 0 || this.baseMaxHp <= 0) return;
     this.baseHp = Math.max(0, this.baseHp - dmg);
     this.grid.syncBaseHpDisplay(this.baseHp, this.baseMaxHp);
-    if (this.baseHp <= 0) {
-      this.lose('Your home base was destroyed!');
+    if (typeof AudioEngine !== 'undefined') AudioEngine.play('damage');
+    if (this.tutorialActive) {
+      if (this.baseHp <= 0) this.finishTutorialWaveEarly();
       return;
     }
-    if (typeof AudioEngine !== 'undefined') AudioEngine.play('damage');
+    if (this.baseHp <= 0) {
+      this.lose('Your home base was destroyed!');
+    }
+  }
+
+  finishTutorialWaveEarly() {
+    if (!this.tutorialActive || this.phase !== 'WAVE' || this.waveEnding) return;
+    if (typeof forceEndTutorialWaveEnemies === 'function') forceEndTutorialWaveEnemies(this);
+    this.projectiles = [];
+    this.effects = this.effects.filter((fx) => !['muzzle', 'spark', 'splash'].includes(fx.type));
+    this.waveEnding = true;
+    this.waveEndTimer = CONFIG.WAVE_END_DELAY ?? 1;
+    this.setBanner('Home base destroyed — demo complete!', this.waveEndTimer + 0.4);
   }
 
   baseUpgradeCost() {
@@ -300,6 +435,8 @@ class Game {
       reason,
       score: this.score,
       wave: this.wave,
+      baseHp: this.baseHp,
+      baseMaxHp: this.baseMaxHp,
       runStats: { ...this.runStats },
       difficulty: this.difficultyId,
       dailySeed: this.dailySeed,
@@ -373,11 +510,20 @@ class Game {
     for (const fx of this.effects) fx.t += dt;
     this.effects = this.effects.filter((fx) => fx.t < fx.life);
 
+    if (this.tutorialActive && this.tutorialStep === 'place' && this._tutorialPlaceTimer > 0) {
+      this._tutorialPlaceTimer -= dt;
+      if (this._tutorialPlaceTimer <= 0) {
+        this._tutorialPlaceTimer = 0;
+        this.startTutorialWave();
+      }
+    }
+
     switch (this.phase) {
       case 'PLACING_BASE': this.updateBuildOrPlacing(dt, true); break;
       case 'BUILD':        this.updateBuildOrPlacing(dt, false); break;
       case 'WAVE':         this.updateWave(dt); break;
       case 'SHOP':         break;
+      case 'TUTORIAL':     break;
       default: break;
     }
   }
@@ -413,6 +559,7 @@ class Game {
     }
 
     this.grid.registerPlacement(placed, piece.card, isBase);
+    if (this.runStats) this.runStats.piecesPlaced += 1;
 
     if (isBase) {
       this.initBasePoolFromPlacement(piece.card, placed.length);
@@ -441,6 +588,15 @@ class Game {
       this.runStats.linesCleared += fullRows.length;
       if (fullRows.length > this.runStats.maxLinesAtOnce) {
         this.runStats.maxLinesAtOnce = fullRows.length;
+      }
+      if (fullRows.length === 2) this.runStats.doubleClears += 1;
+      if (fullRows.length === 3) this.runStats.tripleClears += 1;
+      if (fullRows.length >= 4) this.runStats.quadClears += 1;
+      if (typeof notifyAchievementUnlock === 'function') {
+        if (fullRows.length >= 4) notifyAchievementUnlock(this, 'tetris');
+        else if (fullRows.length === 3) notifyAchievementUnlock(this, 'triple_clear');
+        else if (fullRows.length === 2) notifyAchievementUnlock(this, 'double_clear');
+        if (this.runStats.linesCleared >= 10) notifyAchievementUnlock(this, 'line_10');
       }
       if (typeof AudioEngine !== 'undefined') AudioEngine.play('line');
       const reduceMotion = typeof getSetting === 'function' && getSetting('reduceMotion');
@@ -501,17 +657,37 @@ class Game {
     if (income > 0) {
       this.addPoints(income);
       this.waveStats.income = income;
+      if (this.runStats) this.runStats.passiveIncomeTotal += income;
     }
+    this._trackBaseHpFloor();
+  }
+
+  _trackBaseHpFloor() {
+    if (!this.runStats || this.baseMaxHp <= 0) return;
+    const hp = Math.max(0, this.baseHp);
+    if (hp < this.runStats.minBaseHp) this.runStats.minBaseHp = hp;
   }
 
   updateWave(dt) {
     const dtScaled = dt * (this.waveSpeed || 1);
+    if (this.tutorialActive) {
+      this._tutorialWaveElapsed = (this._tutorialWaveElapsed || 0) + dt;
+      const spCheck = this.waveSpawner;
+      const allSpawned = spCheck && spCheck.i >= spCheck.schedule.length;
+      if (allSpawned && typeof tutorialWaveTimedOut === 'function' && tutorialWaveTimedOut(this)) {
+        if (typeof forceEndTutorialWaveEnemies === 'function') forceEndTutorialWaveEnemies(this);
+      }
+    }
     const sp = this.waveSpawner;
     if (sp && sp.i < sp.schedule.length) {
       sp.t += dtScaled;
       while (sp.i < sp.schedule.length && sp.t >= sp.schedule[sp.i].at) {
         const item = sp.schedule[sp.i];
-        this.enemies.push(makeEnemy(item.type, this.grid, this.wave, { elite: !!item.elite }));
+        if (this.tutorialActive && typeof makeTutorialEnemy === 'function') {
+          this.enemies.push(makeTutorialEnemy(item.type, this.grid, this.wave, item.col));
+        } else {
+          this.enemies.push(makeEnemy(item.type, this.grid, this.wave, { elite: !!item.elite }));
+        }
         sp.i++;
       }
     }
@@ -526,14 +702,23 @@ class Game {
         catch (err) { console.error('siegeBase threw:', err, e); }
       }
     }
+    this._trackBaseHpFloor();
     const killed = this.enemies.filter((e) => e.dead && !e.despawned);
     for (const e of killed) {
       const scale = CONFIG.KILL_REWARD_WAVE_SCALE ?? 0.012;
       const pts = Math.floor(e.stats.reward * (1 + (this.wave - 1) * scale));
-      this.addPoints(pts);
+      if (!this.tutorialActive) this.addPoints(pts);
       this.waveStats.kills += 1;
       this.waveStats.points += pts;
-      this.runStats.totalKills += 1;
+      if (this.runStats) {
+        this.runStats.totalKills += 1;
+        if (e.eliteOf) this.runStats.eliteKills += 1;
+        if (e.type === 'boss') this.runStats.bossKills += 1;
+        if (!this.tutorialActive && this.runStats.totalKills === 1
+            && typeof notifyAchievementUnlock === 'function') {
+          notifyAchievementUnlock(this, 'first_blood');
+        }
+      }
     }
     this.enemies = this.enemies.filter((e) => !e.dead);
 
@@ -562,7 +747,8 @@ class Game {
       const delay = CONFIG.WAVE_END_DELAY ?? 1;
       this.waveEnding = true;
       this.waveEndTimer = delay;
-      this.setBanner(`Wave ${this.wave} cleared!`, delay + 0.4);
+      const msg = this.tutorialActive ? 'Demo complete!' : `Wave ${this.wave} cleared!`;
+      this.setBanner(msg, delay + 0.4);
     }
   }
 
@@ -570,7 +756,32 @@ class Game {
     this.waveEnding = false;
     this.waveEndTimer = 0;
     this.clearCombatVisuals();
+    if (this.tutorialActive) {
+      this.tutorialStep = 'outro';
+      this.phase = 'TUTORIAL';
+      this.paused = true;
+      this.activePiece = null;
+      if (typeof AudioEngine !== 'undefined') AudioEngine.setMusicPhase('build');
+      window.dispatchEvent(new CustomEvent('ttd-tutorial-step', {
+        detail: { step: 'outro', role: this.tutorialRole },
+      }));
+      return;
+    }
     const stats = this.waveStats || { kills: 0, points: 0, income: 0 };
+    if (this.runStats) {
+      this.runStats.wavesCleared += 1;
+      if (stats.kills > this.runStats.maxKillsOneWave) {
+        this.runStats.maxKillsOneWave = stats.kills;
+      }
+      if (typeof isBossWave === 'function' && isBossWave(this.wave)) {
+        this.runStats.bossWavesCleared += 1;
+      }
+      if (stats.kills >= 30) {
+        if (typeof notifyAchievementUnlock === 'function') {
+          notifyAchievementUnlock(this, 'wave_massacre');
+        }
+      }
+    }
     const summary = `Wave ${this.wave} cleared — ${stats.kills} kills • +${stats.points + stats.income} pts`;
     if (this.wave >= CONFIG.TOTAL_WAVES) {
       this.phase = 'WIN';
@@ -601,6 +812,7 @@ class Game {
     );
     this.deck.replaceAll(cards);
     this.heldCard = null;
+    if (this.runStats) this.runStats.deckReshuffles += 1;
     this.setBanner('Deck reshuffled!', 2.5);
     if (typeof AudioEngine !== 'undefined') AudioEngine.play('buy');
   }
@@ -673,6 +885,8 @@ class Game {
   lose(reason) {
     this.phase = 'GAMEOVER';
     this.clearCombatVisuals();
+    if (this.runStats) this.runStats.lossReason = reason || '';
+    this._trackBaseHpFloor();
     this.setBanner('Game Over', 99);
     this._emitGameEnd(false, reason);
   }

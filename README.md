@@ -95,7 +95,7 @@ The starter `Pellet Gun` is intentionally weaker than late-game alternatives. Su
 - **?** (HUD) — open help (pauses the game; Esc or Close to resume)
 - **★** (HUD) — opens [highscores.html](highscores.html) showing your best run (wave + points)
 - Mouse hover — preview a placed cell's range circle
-- **Touch** — swipe on the board: left / right / down to move, up to rotate; tap a damaged cell to repair
+- **Touch** — swipe left / right to move, up to rotate, down to drop; long-press to hold; tap a damaged cell to repair
 
 ## High scores
 
@@ -105,7 +105,7 @@ Runs are saved automatically when you win or lose. Tap **★** in the HUD to ope
 
 **Counters:** tower roles deal 1.5× damage to “weak” enemy types and 0.55× to “resist” types — e.g. sniper and piercer vs flyers; shooters are weak against flyers. See in-game help (?).
 
-On mobile, the board stays on top with tabbed HUD panels. **Swipe** the board to move pieces (left / right / down) or rotate (up); tap damaged cells to repair. Optional pause / speed buttons during waves can be enabled from the title screen.
+On mobile, the board stays on top with tabbed HUD panels (**Game**, **Deck**, **Controls**, **Settings**). Swipe the board to move, swipe up to rotate, swipe down to drop, long-press to hold. Leaving the Game tab pauses the run. High scores are only on the title screen.
 
 ## File Layout
 

@@ -18,6 +18,9 @@ class Input {
     this._tapMaxPx = 14;
     this._swipeMinPx = 28;
     this._tapMaxMs = 350;
+    this._holdLongMs = 450;
+    this._touchHoldTimer = null;
+    this._touchHoldFired = false;
 
     this._keyToAction = {
       ArrowLeft: 'left',
@@ -106,27 +109,47 @@ class Input {
     }
   }
 
+  _clearTouchHoldTimer() {
+    if (this._touchHoldTimer != null) {
+      clearTimeout(this._touchHoldTimer);
+      this._touchHoldTimer = null;
+    }
+  }
+
   onTouchPointerDown(e) {
     if (e.pointerType !== 'touch') return;
     if (!this.canActOnPiece()) return;
     if (this._touchPointerId != null) return;
     e.preventDefault();
+    this._clearTouchHoldTimer();
+    this._touchHoldFired = false;
     this._touchPointerId = e.pointerId;
     this._touchStart = { x: e.clientX, y: e.clientY, t: performance.now() };
     this._touchMoved = false;
     try { this.canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    this._touchHoldTimer = setTimeout(() => {
+      if (e.pointerId !== this._touchPointerId || !this._touchStart) return;
+      if (this._touchMoved || !this.canActOnPiece()) return;
+      this._touchHoldFired = true;
+      this.performAction('hold');
+      this._haptic(10);
+    }, this._holdLongMs);
   }
 
   onTouchPointerMove(e) {
     if (e.pointerId !== this._touchPointerId || !this._touchStart) return;
     const dx = e.clientX - this._touchStart.x;
     const dy = e.clientY - this._touchStart.y;
-    if (Math.hypot(dx, dy) > this._tapMaxPx) this._touchMoved = true;
+    if (Math.hypot(dx, dy) > this._tapMaxPx) {
+      this._touchMoved = true;
+      this._clearTouchHoldTimer();
+    }
   }
 
   onTouchPointerUp(e) {
     if (e.pointerId !== this._touchPointerId || !this._touchStart) return;
     e.preventDefault();
+    this._clearTouchHoldTimer();
     const dx = e.clientX - this._touchStart.x;
     const dy = e.clientY - this._touchStart.y;
     const dt = performance.now() - this._touchStart.t;
@@ -136,6 +159,7 @@ class Input {
     try { this.canvas.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
 
     if (!this.canActOnPiece()) return;
+    if (this._touchHoldFired) return;
 
     if (!this._touchMoved && dt < this._tapMaxMs) {
       if (this.tryRepairAt(e.clientX, e.clientY)) {
@@ -143,6 +167,8 @@ class Input {
       }
       return;
     }
+
+    if (!this._touchMoved && dt >= this._holdLongMs) return;
 
     const adx = Math.abs(dx);
     const ady = Math.abs(dy);
@@ -153,8 +179,8 @@ class Input {
         this.performAction('rotate');
         this._haptic(8);
       } else if (dy >= this._swipeMinPx) {
-        this.performAction('down');
-        this._haptic(6);
+        this.performAction('hardDrop');
+        this._haptic(8);
       }
       return;
     }

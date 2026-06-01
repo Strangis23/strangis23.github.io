@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS = {
   reduceMotion: false,
   pathPreview: true,
   colorblindPatterns: false,
+  defaultWaveSpeed: 3,
 };
 
 let _settings = null;
@@ -42,41 +43,33 @@ function getSetting(key) {
   return loadSettings()[key];
 }
 
-function applySettingsToForm(form) {
-  if (!form) return;
-  const s = loadSettings();
-  const set = (id, val) => {
-    const el = form.querySelector('#' + id);
-    if (!el) return;
-    if (el.type === 'checkbox') el.checked = !!val;
-    else el.value = String(val);
-  };
-  set('settings-master', s.masterVolume);
-  set('settings-sfx', s.sfxVolume);
-  set('settings-music', s.musicVolume);
-  set('settings-music-muted', s.musicMuted);
-  set('settings-reduce-motion', s.reduceMotion);
-  set('settings-path-preview', s.pathPreview);
-  set('settings-colorblind', s.colorblindPatterns);
+function querySettingInputs() {
+  return document.querySelectorAll('[data-setting]');
 }
 
-function readSettingsFromForm(form) {
-  if (!form) return saveSettings({});
-  const num = (id, fallback) => {
-    const el = form.querySelector('#' + id);
-    return el ? parseFloat(el.value) : fallback;
-  };
-  const chk = (id) => {
-    const el = form.querySelector('#' + id);
-    return el ? el.checked : false;
-  };
-  return saveSettings({
-    masterVolume: num('settings-master', DEFAULT_SETTINGS.masterVolume),
-    sfxVolume: num('settings-sfx', DEFAULT_SETTINGS.sfxVolume),
-    musicVolume: num('settings-music', DEFAULT_SETTINGS.musicVolume),
-    musicMuted: chk('settings-music-muted'),
-    reduceMotion: chk('settings-reduce-motion'),
-    pathPreview: chk('settings-path-preview'),
-    colorblindPatterns: chk('settings-colorblind'),
-  });
+function applySettingsToForm() {
+  const s = loadSettings();
+  for (const el of querySettingInputs()) {
+    const key = el.dataset.setting;
+    if (!(key in s)) continue;
+    const val = s[key];
+    if (el.type === 'checkbox') el.checked = !!val;
+    else if (el.type === 'radio') el.checked = Number(el.value) === Number(val);
+    else el.value = String(val);
+  }
+}
+
+function readSettingsFromForm() {
+  const next = { ...loadSettings() };
+  for (const el of querySettingInputs()) {
+    const key = el.dataset.setting;
+    if (!key) continue;
+    if (el.type === 'checkbox') next[key] = el.checked;
+    else if (el.type === 'radio') {
+      if (el.checked) next[key] = parseFloat(el.value);
+    } else if (el.type === 'range' || el.type === 'number') {
+      next[key] = parseFloat(el.value);
+    }
+  }
+  return saveSettings(next);
 }
