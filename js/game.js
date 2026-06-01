@@ -31,7 +31,7 @@ class Game {
     this.input = null;
     this.shopCards = []; // currently offered shop cards (each annotated with .bought boolean)
     this.pendingShopBuyIndex = -1; // shop card awaiting deck swap (-1 = none)
-    this.waveSpeed = 1;  // player-controlled wave time-scale (1x / 2x / 3x)
+    this.waveSpeed = CONFIG.DEFAULT_WAVE_SPEED ?? 3;  // player-controlled wave time-scale (1x / 2x / 3x)
     this.waveStats = { kills: 0, points: 0, income: 0 };
     this.heldCard = null;          // Tetris-style hold slot
     this.holdUsedThisPiece = false; // reset on lock so each spawn allows one hold
@@ -133,10 +133,11 @@ class Game {
     const rngFn = () => this.rng.next();
     this.runStats = createRunStats();
     const shapePool = this.gameMode.shapes;
-    const starterCards = this.gameMode.randomDeck
-      ? generateRandomDeck(1, CONFIG.DECK_SIZE, rngFn, shapePool)
-      : makeStarterDeck(rngFn, shapePool);
+    const starterCards = makeStarterDeck(rngFn, shapePool);
     this.deck = new Deck(starterCards, rngFn);
+    if (this.difficulty.bottomWallFill) {
+      applyBrutalBottomWallFill(this.grid, rngFn);
+    }
     this.phase = 'PLACING_BASE';
     this.piecesLeftThisBuild = 1;
     this.spawnNextPiece();
@@ -402,6 +403,15 @@ class Game {
     const placed = piece.cells();
     const isBase = this.phase === 'PLACING_BASE';
 
+    const nullsBeforeRow = new Map();
+    for (let y = 0; y < this.grid.h; y++) {
+      let gaps = 0;
+      for (let x = 0; x < this.grid.w; x++) {
+        if (this.grid.cells[y][x] === null) gaps++;
+      }
+      nullsBeforeRow.set(y, gaps);
+    }
+
     this.grid.registerPlacement(placed, piece.card, isBase);
 
     if (isBase) {
@@ -416,13 +426,15 @@ class Game {
       return;
     }
 
-    const fullRows = this.grid.findFullRows();
+    const lineClearOpts = this.difficulty.bottomWallFill
+      ? { strictGapFill: true, nullsBeforeRow }
+      : null;
+    const fullRows = this.grid.findRowsClearedByPlacement(placed, lineClearOpts);
     if (fullRows.length > 0) {
       for (const y of fullRows) {
         this.effects.push({ type: 'lineClear', x: 0, y, t: 0, life: 0.4 });
       }
-      const destroyed = this.grid.clearRows(fullRows);
-      const baseDestroyed = destroyed.some((d) => d.cell.isBase);
+      this.grid.clearRows(fullRows);
       const bonus = CONFIG.LINE_BONUS[fullRows.length] || (fullRows.length * 200);
       this.addPoints(bonus);
       this.runStats.lineClears += 1;
@@ -433,10 +445,6 @@ class Game {
       if (typeof AudioEngine !== 'undefined') AudioEngine.play('line');
       const reduceMotion = typeof getSetting === 'function' && getSetting('reduceMotion');
       if (!reduceMotion) this.screenShake = { t: 0, life: 0.25, amp: 4 + fullRows.length };
-      if (baseDestroyed) {
-        this.lose('Your home base was cleared away with the line!');
-        return;
-      }
       if (typeof recalculateGridSynergy === 'function') {
         recalculateGridSynergy(this.grid);
       }

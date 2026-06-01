@@ -35,46 +35,89 @@ class Grid {
     return false;
   }
 
+  isRowFull(y) {
+    for (let x = 0; x < this.w; x++) {
+      if (this.cells[y][x] === null) return false;
+    }
+    return true;
+  }
+
   // Find full rows. Returns array of row indices (top-to-bottom).
   findFullRows() {
     const full = [];
     for (let y = 0; y < this.h; y++) {
-      let allFilled = true;
-      for (let x = 0; x < this.w; x++) {
-        if (this.cells[y][x] === null) { allFilled = false; break; }
-      }
-      if (allFilled) full.push(y);
+      if (this.isRowFull(y)) full.push(y);
     }
     return full;
   }
 
-  // Clear specified rows and apply true Tetris gravity (rows above fall down).
-  // Returns the cells destroyed (so caller can refund/log them).
+  rowHasClearableBlock(y) {
+    for (let x = 0; x < this.w; x++) {
+      const cell = this.cells[y][x];
+      if (cell && !cell.isBase) return true;
+    }
+    return false;
+  }
+
+  placedCellsInRow(y, placedCells) {
+    return placedCells.filter(({ x, y: py }) => py === y && this.inBounds(x, py));
+  }
+
+  // True when the row is completely filled, has blocks to clear, and this piece helped complete it.
+  shouldClearRow(y, placedCells, opts = null) {
+    if (!this.isRowFull(y) || !this.rowHasClearableBlock(y)) return false;
+    const placedHere = this.placedCellsInRow(y, placedCells);
+    if (placedHere.length === 0) return false;
+    // Brutal pre-fill: only clear if this piece filled every gap that was in the row before lock.
+    if (opts && opts.strictGapFill) {
+      const nullsBefore = opts.nullsBeforeRow && opts.nullsBeforeRow.get(y);
+      if (nullsBefore !== placedHere.length) return false;
+    }
+    return true;
+  }
+
+  // Rows to clear this lock — evaluated one row at a time (no board-wide sweep).
+  findRowsClearedByPlacement(placedCells, opts = null) {
+    const placedInRow = new Set();
+    for (const { x, y } of placedCells) {
+      if (this.inBounds(x, y)) placedInRow.add(y);
+    }
+    const full = [];
+    for (const y of placedInRow) {
+      if (this.shouldClearRow(y, placedCells, opts)) full.push(y);
+    }
+    return full.sort((a, b) => a - b);
+  }
+
+  // Shift non-empty rows down as whole lines; empty rows are removed from the stack.
+  compactRowsDown() {
+    const kept = [];
+    for (let y = 0; y < this.h; y++) {
+      if (this.cells[y].some((c) => c !== null)) kept.push(this.cells[y]);
+    }
+    const emptyRow = () => Array(this.w).fill(null);
+    while (kept.length < this.h) kept.unshift(emptyRow());
+    this.cells = kept;
+  }
+
+  // Clear each qualifying full row (non-base blocks only), then compact whole rows downward.
   clearRows(rows) {
     if (rows.length === 0) return [];
     const destroyed = [];
-    const rowSet = new Set(rows);
-    // Collect destroyed cells.
     for (const y of rows) {
+      if (!this.isRowFull(y) || !this.rowHasClearableBlock(y)) continue;
       for (let x = 0; x < this.w; x++) {
-        if (this.cells[y][x] !== null) {
-          destroyed.push({ x, y, cell: this.cells[y][x] });
-        }
+        const cell = this.cells[y][x];
+        if (cell === null || cell.isBase) continue;
+        destroyed.push({ x, y, cell });
+        this.cells[y][x] = null;
       }
     }
-    // Build the new grid by stacking the rows that survive at the bottom.
-    const newRows = [];
-    for (let y = this.h - 1; y >= 0; y--) {
-      if (!rowSet.has(y)) newRows.push(this.cells[y]);
-    }
-    while (newRows.length < this.h) newRows.push(Array(this.w).fill(null));
-    // newRows is bottom-up; reverse so index 0 is the top row.
-    newRows.reverse();
-    // The first (this.h - rows.length) entries are the original top rows; we need
-    // them shifted DOWN by rows.length. The above construction already does that.
-    this.cells = newRows;
-    if (destroyed.length > 0 && typeof recalculateGridSynergy === 'function') {
-      recalculateGridSynergy(this);
+    if (destroyed.length > 0) {
+      this.compactRowsDown();
+      if (typeof recalculateGridSynergy === 'function') {
+        recalculateGridSynergy(this);
+      }
     }
     return destroyed;
   }
@@ -166,4 +209,19 @@ class Grid {
       }
     }
   }
+}
+
+// Brutal difficulty: bottom half is common walls with one random gap per row (line-clearable).
+function applyBrutalBottomWallFill(grid, rngFn) {
+  const rng = typeof rngFn === 'function' ? rngFn : Math.random;
+  const wallCard = makeCard('wall', 'common', 'O');
+  const startY = Math.floor(grid.h / 2);
+  const placed = [];
+  for (let y = startY; y < grid.h; y++) {
+    const gapX = Math.floor(rng() * grid.w);
+    for (let x = 0; x < grid.w; x++) {
+      if (x !== gapX) placed.push({ x, y });
+    }
+  }
+  grid.registerPlacement(placed, wallCard, false);
 }

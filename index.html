@@ -109,7 +109,7 @@
         <div class="hud-stat"><span>Speed Tier</span><span id="speed-tier">1</span></div>
         <div class="hud-stat"><span>Pieces Left</span><span id="pieces-left">--</span></div>
         <div class="hud-stat"><span>Enemies Left</span><span id="enemies-left">--</span></div>
-        <div class="hud-stat"><span>Wave Speed (F)</span><span id="wave-speed">1x</span></div>
+        <div class="hud-stat"><span>Wave Speed (F)</span><span id="wave-speed">3x</span></div>
       </div>
     </div>
 
@@ -148,7 +148,7 @@
       </div>
       <div class="mobile-group mobile-group-wave">
         <button type="button" class="mob-btn mob-pause" data-action="pause" aria-label="Pause">⏸ Pause</button>
-        <button type="button" class="mob-btn mob-speed" data-action="waveSpeed" aria-label="Wave speed">1x</button>
+        <button type="button" class="mob-btn mob-speed" data-action="waveSpeed" aria-label="Wave speed">3x</button>
       </div>
     </div>
     <div id="overlay" class="hidden">
@@ -223,7 +223,7 @@
       <section>
         <h3>Goal</h3>
         <p>Clear <strong>100 waves</strong> by building defenses with polyomino modules. Protect your <strong>home base</strong> — the first piece you place.</p>
-        <p class="muted">You lose if base HP hits zero, the base is line-cleared, or blocks reach the spawn zone (top). Enemies on your base deal siege damage over time.</p>
+        <p class="muted">You lose if base HP hits zero or blocks reach the spawn zone (top). Only a completely full row clears, and your home base cells are not destroyed (they fall with the stack). Enemies on your base deal siege damage over time.</p>
       </section>
       <section>
         <h3>Phases</h3>

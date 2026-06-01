@@ -56,7 +56,8 @@ class MobileControls {
     }
 
     if (this.waveSpeedBtn) {
-      this.waveSpeedBtn.textContent = `${this.game.waveSpeed || 1}x`;
+      const def = CONFIG.DEFAULT_WAVE_SPEED ?? 3;
+      this.waveSpeedBtn.textContent = `${this.game.waveSpeed || def}x`;
     }
 
     requestAnimationFrame(() => window.TTD?.fitGameCanvas?.());
