@@ -36,6 +36,26 @@
     return 96;
   }
 
+  function isMobileLayout() {
+    if (typeof Platform !== 'undefined' && Platform.fixedWindow) return false;
+    if (document.documentElement.classList.contains('platform-desktop')) return false;
+    return window.matchMedia('(max-width: 1100px), (hover: none) and (pointer: coarse)').matches;
+  }
+
+  function mobileHeaderChrome() {
+    if (!isMobileLayout()) return 0;
+    if (gameRoot?.dataset.mobileTab !== 'game') return 0;
+    const tabs = document.getElementById('mobile-hud-tabs');
+    const hudLeft = document.getElementById('hud-left');
+    const hudTop = hudLeft?.querySelector('.hud-top');
+    const phase = document.getElementById('phase-indicator');
+    let h = 0;
+    if (tabs && tabs.offsetParent !== null) h += tabs.offsetHeight;
+    if (hudTop && hudTop.offsetParent !== null) h += hudTop.offsetHeight;
+    if (phase && phase.offsetParent !== null) h += phase.offsetHeight;
+    return h + 12;
+  }
+
   function layoutMetrics() {
     if (typeof Platform !== 'undefined' && Platform.fixedWindow) {
       const pad = Platform.layoutPadding || 18;
@@ -60,7 +80,7 @@
       const adH = adBanner && !adBanner.classList.contains('hidden')
         ? adBanner.offsetHeight
         : 0;
-      const chrome = adH + mobileControlsReserve() + padY + 16;
+      const chrome = adH + mobileControlsReserve() + mobileHeaderChrome() + padY + 16;
       const maxByWidth = availW * (natH / natW);
       const maxByHeight = viewportHeight() - chrome;
       return {

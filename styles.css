@@ -2112,50 +2112,184 @@ button:disabled {
 }
 
 @media (max-width: 1100px), (hover: none) and (pointer: coarse) {
-  #game-root { flex-direction: column; align-items: center; padding: 8px; }
-  .hud-panel { width: 100%; max-width: 480px; flex: 0 0 auto; }
-  #canvas-wrap {
-    order: -1;
+  html:not(.platform-desktop) #game-root { flex-direction: column; align-items: center; padding: 8px; }
+  html:not(.platform-desktop) .hud-panel { width: 100%; max-width: 480px; flex: 0 0 auto; }
+  html:not(.platform-desktop) .mobile-hud-tabs {
+    order: 0;
+  }
+  html:not(.platform-desktop) #hud-left { order: 1; }
+  html:not(.platform-desktop) #canvas-wrap {
+    order: 2;
     max-width: 100%;
     flex-shrink: 0;
   }
-  #hud-left { order: 0; }
-  #hud-right { order: 1; }
-  #canvas-wrap.mobile-active {
+  html:not(.platform-desktop) #hud-right { order: 3; }
+  html:not(.platform-desktop) #canvas-wrap.mobile-active {
     padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   }
 }
 
+/* Mobile tab bar — portrait / touch layouts */
+.mobile-hud-tabs {
+  display: none;
+}
+
+@media (max-width: 1100px), (hover: none) and (pointer: coarse) {
+  html:not(.platform-desktop) .mobile-hud-tabs {
+    display: flex;
+    order: 0;
+    width: 100%;
+    max-width: 480px;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 10px;
+    background: rgba(6, 10, 22, 0.85);
+    border: 1px solid var(--line);
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  html:not(.platform-desktop) .mobile-hud-tab {
+    flex: 1 1 0;
+    min-height: 44px;
+    padding: 8px 6px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  html:not(.platform-desktop) .mobile-hud-tab.active {
+    background: rgba(34, 211, 238, 0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  html:not(.platform-desktop) .mobile-hud-tab:not(.active):hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+  }
+
+  /* Game tab — board + compact header only */
+  html:not(.platform-desktop) #game-root[data-mobile-tab="game"] #hud-left > *:not(.hud-top):not(#phase-indicator) {
+    display: none !important;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="game"] #hud-right {
+    display: none !important;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="game"] #hud-left {
+    padding: 8px 12px;
+    gap: 6px;
+    max-height: none;
+    overflow: visible;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="game"] #phase-indicator {
+    font-size: 12px;
+    text-align: center;
+    padding: 4px 0 0;
+  }
+
+  /* Deck tab — stats, pieces, deck, wave preview */
+  html:not(.platform-desktop) #game-root[data-mobile-tab="deck"] #canvas-wrap {
+    display: none !important;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="deck"] #hud-right .controls {
+    display: none !important;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="deck"] #hud-left,
+  html:not(.platform-desktop) #game-root[data-mobile-tab="deck"] #hud-right {
+    max-height: none;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-width: 100%;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="deck"] .hud-collapsible > summary {
+    display: none;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="deck"] .hud-collapsible > :not(summary) {
+    padding: 10px 12px;
+  }
+
+  /* Controls tab */
+  html:not(.platform-desktop) #game-root[data-mobile-tab="controls"] #canvas-wrap {
+    display: none !important;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="controls"] #hud-left > *:not(.hud-top) {
+    display: none !important;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="controls"] #hud-left {
+    padding: 8px 12px;
+    gap: 6px;
+    max-height: none;
+    overflow: visible;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="controls"] #hud-right .deck-panel {
+    display: none !important;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="controls"] #hud-right {
+    max-height: none;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-width: 100%;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="controls"] .hud-collapsible > summary {
+    display: none;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="controls"] .hud-collapsible > :not(summary) {
+    padding: 10px 12px;
+  }
+
+  html:not(.platform-desktop) #game-root[data-mobile-tab="deck"] .hud-collapsible,
+  html:not(.platform-desktop) #game-root[data-mobile-tab="controls"] .hud-collapsible {
+    border: none;
+    background: transparent;
+    padding: 0;
+  }
+}
+
 @media (max-width: 900px) {
-  #game-root { flex-direction: column; align-items: center; }
-  #canvas-wrap { max-width: 100%; }
-  .hud-panel {
+  html:not(.platform-desktop) #game-root { flex-direction: column; align-items: center; }
+  html:not(.platform-desktop) #canvas-wrap { max-width: 100%; }
+  html:not(.platform-desktop) .hud-panel {
     max-height: none;
     overflow-y: visible;
     max-width: 100%;
   }
-  #hud-left {
-    max-height: 38vh;
-    overflow-y: auto;
-  }
-  #hud-right {
-    max-height: 42vh;
-    overflow-y: auto;
-  }
-  .hud-stats-grid {
+  html:not(.platform-desktop) .hud-stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 4px 12px;
   }
-  .hud-stats-grid .hud-stat {
+  html:not(.platform-desktop) .hud-stats-grid .hud-stat {
     font-size: 11px;
     padding: 2px 0;
   }
-  .piece-previews {
+  html:not(.platform-desktop) .piece-previews {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
-  #next-canvas, #hold-canvas {
+  html:not(.platform-desktop) #next-canvas, html:not(.platform-desktop) #hold-canvas {
     width: 72px;
     height: 72px;
   }
@@ -2473,7 +2607,7 @@ button:disabled {
   overflow: hidden;
 }
 
-.platform-desktop #ad-banner {
+.platform-desktop #mobile-hud-tabs {
   display: none !important;
 }
 

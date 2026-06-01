@@ -188,7 +188,45 @@ class UI {
     });
 
     this.initHudCollapsible();
+    this.initMobileTabs();
     if (typeof AudioEngine !== 'undefined') AudioEngine._syncMuteButtons();
+  }
+
+  initMobileTabs() {
+    const gameRoot = document.getElementById('game-root');
+    const tabs = document.getElementById('mobile-hud-tabs');
+    if (!gameRoot || !tabs) return;
+
+    const mobileMq = window.matchMedia('(max-width: 1100px), (hover: none) and (pointer: coarse)');
+
+    const setTab = (tab) => {
+      gameRoot.dataset.mobileTab = tab;
+      for (const btn of tabs.querySelectorAll('.mobile-hud-tab')) {
+        const active = btn.dataset.tab === tab;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      }
+      if (typeof window.TTD?.fitGameCanvas === 'function') {
+        requestAnimationFrame(() => window.TTD.fitGameCanvas());
+      }
+    };
+
+    tabs.addEventListener('click', (e) => {
+      const btn = e.target.closest('.mobile-hud-tab');
+      if (!btn?.dataset.tab) return;
+      setTab(btn.dataset.tab);
+    });
+
+    const syncDefault = () => {
+      if (!mobileMq.matches || document.documentElement.classList.contains('platform-desktop')) {
+        gameRoot.dataset.mobileTab = 'game';
+        return;
+      }
+      if (!gameRoot.dataset.mobileTab) setTab('game');
+    };
+
+    syncDefault();
+    mobileMq.addEventListener('change', syncDefault);
   }
 
   initHudCollapsible() {
