@@ -418,15 +418,22 @@ strong {
 #hud-right {
   order: 3;
   justify-content: flex-start;
+  min-height: 0;
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 #hud-right .deck-panel {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 #hud-right .controls {
-  flex: 0 0 auto;
+  flex-shrink: 0;
 }
 
 .hud-top {
@@ -562,9 +569,7 @@ strong {
 }
 
 .hud-collapsible.deck-panel {
-  overflow: visible;
-  position: relative;
-  z-index: 1;
+  overflow: hidden;
 }
 
 #wave-preview-section {
@@ -572,9 +577,6 @@ strong {
   z-index: 0;
 }
 
-.hud-collapsible.deck-panel > #deck-chips {
-  padding-top: 4px;
-}
 
 @media (min-width: 901px) {
   .hud-collapsible > summary {
@@ -1814,7 +1816,7 @@ body.legal-page-body #app-shell {
 
 .shop-deck-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -2004,32 +2006,57 @@ body.legal-page-body #app-shell {
 }
 
 .card-tile {
-  padding: 8px 8px 6px;
-  gap: 3px;
-  min-height: 88px;
+  padding: 0;
+  gap: 0;
+  min-height: 150px;
+  overflow: hidden;
   border-width: 2px;
-  border-left-width: 3px;
-  border-left-color: var(--role-color, var(--line));
+  border-color: color-mix(in srgb, var(--role-color, #64748b) 28%, var(--line));
   background: linear-gradient(
     165deg,
-    color-mix(in srgb, var(--role-color, #64748b) 18%, transparent),
-    rgba(8, 14, 28, 0.85) 50%
+    color-mix(in srgb, var(--role-color, #64748b) 12%, transparent),
+    rgba(8, 14, 28, 0.88) 55%
   );
 }
 
 .card-tile .rarity-tag {
-  top: 4px;
-  right: 4px;
-  font-size: 7px;
-  letter-spacing: 0.5px;
-  padding: 1px 4px;
+  position: static;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.card-tile .name {
+.card-tile .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 8px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.25), transparent 80%),
+    rgba(3, 7, 18, 0.25);
+}
+
+.card-tile .card-name {
   font-size: 11px;
-  line-height: 1.25;
-  padding-right: 36px;
-  margin-top: 0;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-tile .card-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .card-tile .shape-badge {
@@ -2038,6 +2065,41 @@ body.legal-page-body #app-shell {
   line-height: 16px;
   font-size: 10px;
   flex-shrink: 0;
+}
+
+.card-tile .card-art {
+  position: relative;
+  height: 88px;
+  background:
+    radial-gradient(ellipse 120% 90% at 50% 25%, rgba(255, 255, 255, 0.10), transparent 60%),
+    radial-gradient(ellipse 120% 90% at 50% 75%, color-mix(in srgb, var(--role-color, #64748b) 22%, transparent), transparent 65%),
+    rgba(2, 6, 23, 0.65);
+}
+
+.card-tile .card-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.06), transparent 35%),
+    linear-gradient(315deg, rgba(255,255,255,0.03), transparent 45%);
+  mix-blend-mode: overlay;
+  opacity: 0.55;
+}
+
+.card-tile .card-art-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.card-tile .card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 8px 8px;
+  background: rgba(0, 0, 0, 0.12);
 }
 
 .card-tile .role-line {
@@ -2059,8 +2121,9 @@ body.legal-page-body #app-shell {
 }
 
 .card-tile .footer {
-  margin-top: auto;
-  padding-top: 4px;
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .card-tile .footer button {
@@ -2070,6 +2133,41 @@ body.legal-page-body #app-shell {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+/* Rarity "card skins" (applies to all tiles, including rarer versions) */
+.card-tile[data-rarity="common"] {
+  box-shadow: 0 0 0 1px rgba(156, 163, 175, 0.18) inset;
+}
+.card-tile[data-rarity="uncommon"] {
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.18) inset, 0 0 14px rgba(34, 197, 94, 0.10);
+}
+.card-tile[data-rarity="rare"] {
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.18) inset, 0 0 16px rgba(59, 130, 246, 0.12);
+}
+.card-tile[data-rarity="epic"] {
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.20) inset, 0 0 18px rgba(168, 85, 247, 0.16);
+}
+.card-tile[data-rarity="legendary"] {
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.22) inset, 0 0 22px rgba(251, 191, 36, 0.18);
+}
+.card-tile[data-rarity="epic"]::before,
+.card-tile[data-rarity="legendary"]::before {
+  content: '';
+  position: absolute;
+  inset: -40% -40%;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255,255,255,0.0) 0px,
+      rgba(255,255,255,0.0) 10px,
+      rgba(255,255,255,0.06) 12px,
+      rgba(255,255,255,0.0) 18px
+    );
+  transform: rotate(8deg);
+  opacity: 0.55;
+  mix-blend-mode: overlay;
 }
 
 .card-tile.disabled {
@@ -2167,11 +2265,165 @@ body.legal-page-body #app-shell {
   font-weight: 700;
 }
 
-/* Persistent HUD deck panel chips */
-.deck-chips {
+/* HUD deck summary — shape & role counts */
+.deck-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.deck-breakdown-empty {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.deck-breakdown-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.deck-breakdown-heading {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.deck-breakdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.deck-breakdown-list--shapes {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+}
+
+.deck-breakdown-row--shape {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   gap: 4px;
+}
+
+.deck-breakdown-row--shape .deck-breakdown-count {
+  text-align: left;
+}
+
+.deck-breakdown-row--role {
+  display: grid;
+  grid-template-columns: minmax(3em, auto) 1fr 1.6em;
+  align-items: center;
+  gap: 6px;
+}
+
+.deck-shape-badge {
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--bg-0);
+  text-align: center;
+}
+
+.deck-breakdown-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deck-role-name {
+  color: var(--text);
+}
+
+.deck-breakdown-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.deck-breakdown-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  min-width: 2px;
+  opacity: 0.85;
+}
+
+.deck-breakdown-count {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-align: right;
+}
+
+.card-tile-compact {
+  min-height: 0;
+  border-radius: 7px;
+}
+
+.card-tile-compact .card-header {
+  padding: 4px 5px 3px;
+  gap: 3px;
+}
+
+.card-tile-compact .card-name {
+  font-size: 8px;
+}
+
+.card-tile-compact .shape-badge {
+  width: 12px;
+  height: 12px;
+  line-height: 12px;
+  font-size: 8px;
+}
+
+.card-tile-compact .rarity-tag {
+  font-size: 7px;
+  padding: 1px 4px;
+}
+
+.card-tile-compact .card-art {
+  height: 40px;
+}
+
+.card-tile-compact .card-body {
+  padding: 4px 5px 5px;
+  gap: 2px;
+}
+
+.card-tile-compact .role-line {
+  font-size: 8px;
+  line-height: 1.15;
+}
+
+.card-tile-compact .stats-compact {
+  font-size: 7px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--muted);
+  min-height: 0;
+}
+
+.shop-deck-grid .card-tile-compact {
+  cursor: pointer;
 }
 
 .deck-chip {
@@ -2757,8 +3009,9 @@ body.legal-page-body #app-shell {
   }
 
   .shop-deck-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
 
   .deck-chip {
     min-height: 58px;
@@ -2811,11 +3064,6 @@ body.legal-page-body #app-shell {
   }
 }
 
-@media (max-width: 400px) {
-  .deck-chips {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
 
 @media (hover: none) and (pointer: coarse) {
   .controls .controls-keyboard {
@@ -3075,6 +3323,11 @@ body.legal-page-body #app-shell {
   align-self: center;
 }
 
+.platform-desktop #hud-right.hud-panel {
+  max-height: calc(var(--swd-window-h, 800px) - 36px);
+  overflow-y: auto;
+}
+
 .platform-desktop .piece-previews-stack {
   display: grid;
   grid-template-columns: 1fr;
@@ -3105,6 +3358,6 @@ body.legal-page-body #app-shell {
 }
 
 .platform-fixed-window .shop-deck-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 

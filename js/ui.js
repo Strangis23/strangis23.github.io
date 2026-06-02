@@ -17,7 +17,7 @@ class UI {
     this.nextCtx = this.elNextCanvas ? this.elNextCanvas.getContext('2d') : null;
     this.elHoldCanvas = document.getElementById('hold-canvas');
     this.holdCtx = this.elHoldCanvas ? this.elHoldCanvas.getContext('2d') : null;
-    this.elDeckChips = document.getElementById('deck-chips');
+    this.elDeckBreakdown = document.getElementById('deck-breakdown');
     this.elDeckCount = document.getElementById('deck-count');
 
     this.helpModal = document.getElementById('help-modal');
@@ -298,7 +298,7 @@ class UI {
   }
 
   syncWaveSpeedRadios() {
-    const speed = this.game.waveSpeed ?? getSetting('defaultWaveSpeed') ?? 3;
+    const speed = this.game.waveSpeed ?? getSetting('defaultWaveSpeed') ?? 1;
     for (const el of document.querySelectorAll('[data-setting="defaultWaveSpeed"]')) {
       if (el.type === 'radio') el.checked = Number(el.value) === Number(speed);
     }
@@ -958,7 +958,7 @@ class UI {
     this.drawNextPiece(game);
     this.drawHoldPiece(game);
     this.renderWavePreview(game);
-    this.renderDeckChips(game);
+    this.renderDeckBreakdown(game);
     if (this.helpBtn) {
       const canHelp = game.phase !== 'IDLE' && game.phase !== 'GAMEOVER' && game.phase !== 'WIN';
       this.helpBtn.disabled = !canHelp;
@@ -987,25 +987,19 @@ class UI {
     Platform.setRichPresence(`${label} · Wave ${Math.max(0, game.wave)}`);
   }
 
-  renderDeckChips(game) {
-    if (!this.elDeckChips) return;
+  renderDeckBreakdown(game) {
+    if (!this.elDeckBreakdown) return;
     if (!game.deck) {
-      this.elDeckChips.innerHTML = '';
+      this.elDeckBreakdown.innerHTML = '';
       if (this.elDeckCount) this.elDeckCount.textContent = '';
       return;
     }
     const cards = game.deck.list();
     if (this.elDeckCount) this.elDeckCount.textContent = `(${cards.length})`;
-    // Avoid wholesale rebuilds when the chip set hasn't changed.
-    const sig = cards.map((c) => `${c.id}:${c.rarity}:${c.role}:${c.shape}`).join('|');
+    const sig = buildDeckBreakdownSig(cards);
     if (this._lastDeckSig === sig) return;
     this._lastDeckSig = sig;
-    this.elDeckChips.innerHTML = '';
-    for (const c of cards) {
-      const chip = buildDeckChip(c, { interactive: false });
-      chip.dataset.tooltip = `${c.name}\n${c.role} • ${c.rarity}\n${formatStats(c.stats)}`;
-      this.elDeckChips.appendChild(chip);
-    }
+    this.elDeckBreakdown.innerHTML = formatDeckBreakdownHtml(cards);
   }
 
   renderWavePreview(game) {
@@ -1222,17 +1216,116 @@ function buildDeckChip(card, opts = {}) {
 
 // Build a card UI element used by both the shop and the deck-pick panes.
 function makeShopDeckChip(card, onPick) {
-  return buildDeckChip(card, { shop: true, onClick: onPick });
+  const el = makeCardEl(card, { layout: 'tile', compact: true });
+  el.classList.add('shop-deck-chip');
+  const footer = el.querySelector('.footer');
+  if (footer) footer.remove();
+  el.addEventListener('click', onPick);
+  return el;
 }
 
 function makeCardEl(card, opts = {}) {
   const isTile = opts.layout === 'tile';
   const isRow = opts.layout === 'row';
+  const isCompact = !!opts.compact;
   const el = document.createElement('div');
-  el.className = 'card' + (isTile ? ' card-tile' : isRow ? ' card-row' : '');
+  el.className = 'card' + (isTile ? ' card-tile' : isRow ? ' card-row' : '')
+    + (isTile && isCompact ? ' card-tile-compact' : '');
   el.dataset.rarity = card.rarity;
   el.style.borderColor = CONFIG.RARITY_COLORS[card.rarity] || 'transparent';
 
+  el.dataset.role = card.role;
+  const roleColor = CONFIG.ROLE_COLORS[card.role] || '#94a3b8';
+  el.style.setProperty('--role-color', roleColor);
+
+  const footer = document.createElement('div');
+  footer.className = isRow ? 'card-row-actions' : 'footer';
+  if (opts.showCost && !isTile) {
+    const cost = document.createElement('span');
+    cost.className = 'cost';
+    cost.textContent = `${card.cost} pts`;
+    footer.appendChild(cost);
+  } else if (!isRow && !isTile) {
+    footer.appendChild(document.createElement('span'));
+  }
+
+  // --- Trading card layout (tile) ---
+  // Used in the shop browse list and pending card preview.
+  if (isTile) {
+    const header = document.createElement('div');
+    header.className = 'card-header';
+
+    const name = document.createElement('div');
+    name.className = 'card-name';
+    name.textContent = card.name;
+
+    const badges = document.createElement('div');
+    badges.className = 'card-badges';
+
+    const shapeBadge = document.createElement('span');
+    shapeBadge.className = 'shape-badge';
+    shapeBadge.style.background = CONFIG.COLORS[card.shape];
+    shapeBadge.textContent = card.shape;
+
+    const rarity = document.createElement('span');
+    rarity.className = 'rarity-tag';
+    rarity.textContent = isCompact ? card.rarity.slice(0, 1) : card.rarity;
+    rarity.title = card.rarity;
+    rarity.style.color = CONFIG.RARITY_COLORS[card.rarity];
+
+    badges.appendChild(shapeBadge);
+    badges.appendChild(rarity);
+
+    header.appendChild(name);
+    header.appendChild(badges);
+
+    const art = document.createElement('div');
+    art.className = 'card-art';
+    const canvas = document.createElement('canvas');
+    canvas.className = 'card-art-canvas';
+    canvas.width = 240;
+    canvas.height = 150;
+    art.appendChild(canvas);
+
+    const body = document.createElement('div');
+    body.className = 'card-body';
+
+    const roleLine = document.createElement('div');
+    roleLine.className = 'role-line';
+    roleLine.style.color = roleColor;
+    roleLine.textContent = `${ROLE_GLYPHS[card.role] || ''} ${ROLE_DISPLAY_NAMES[card.role] || card.role}`;
+
+    const stats = document.createElement('div');
+    stats.className = 'stats';
+    if (isCompact) {
+      stats.classList.add('stats-compact');
+      stats.textContent = cardChipStatLine(card);
+    } else {
+      for (const part of formatStatsList(card.stats)) {
+        const pill = document.createElement('span');
+        pill.className = 'stat-pill';
+        pill.textContent = part;
+        stats.appendChild(pill);
+      }
+    }
+
+    body.appendChild(roleLine);
+    body.appendChild(stats);
+    if (!isCompact) body.appendChild(footer);
+
+    el.appendChild(header);
+    el.appendChild(art);
+    el.appendChild(body);
+
+    // Canvas draw: after layout so it picks correct size on HiDPI.
+    queueMicrotask(() => {
+      try { drawTradingCardArt(canvas, card, { compact: isCompact }); } catch (_) {}
+    });
+
+    return el;
+  }
+
+  // --- Legacy layouts (row / default) ---
   const rarity = document.createElement('div');
   rarity.className = 'rarity-tag';
   rarity.textContent = card.rarity;
@@ -1249,10 +1342,6 @@ function makeCardEl(card, opts = {}) {
   if (!isRow) name.appendChild(shapeBadge);
   name.appendChild(document.createTextNode(card.name));
 
-  el.dataset.role = card.role;
-  const roleColor = CONFIG.ROLE_COLORS[card.role] || '#94a3b8';
-  el.style.setProperty('--role-color', roleColor);
-
   const roleLine = document.createElement('div');
   roleLine.className = 'role-line';
   roleLine.style.color = roleColor;
@@ -1265,17 +1354,6 @@ function makeCardEl(card, opts = {}) {
     pill.className = 'stat-pill';
     pill.textContent = part;
     stats.appendChild(pill);
-  }
-
-  const footer = document.createElement('div');
-  footer.className = isRow ? 'card-row-actions' : 'footer';
-  if (opts.showCost && !isTile) {
-    const cost = document.createElement('span');
-    cost.className = 'cost';
-    cost.textContent = `${card.cost} pts`;
-    footer.appendChild(cost);
-  } else if (!isRow && !isTile) {
-    footer.appendChild(document.createElement('span'));
   }
 
   if (isRow) {
@@ -1304,6 +1382,87 @@ function makeCardEl(card, opts = {}) {
   return el;
 }
 
+function drawTradingCardArt(canvas, card, opts = {}) {
+  if (!canvas || !card) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const w = Math.max(1, Math.round(rect.width * dpr));
+  const h = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== w) canvas.width = w;
+  if (canvas.height !== h) canvas.height = h;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  const compact = !!opts.compact;
+
+  // Background "art frame" gradient + rarity glow.
+  ctx.clearRect(0, 0, w, h);
+  const g = ctx.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0, 'rgba(15, 23, 42, 0.95)');
+  g.addColorStop(0.55, 'rgba(8, 14, 28, 0.85)');
+  g.addColorStop(1, 'rgba(2, 6, 23, 0.95)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+
+  const glow = CONFIG.RARITY_GLOW?.[card.rarity];
+  if (glow) {
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  const m = SHAPES?.[card.shape]?.[0];
+  const blockOpts = {
+    role: card.role,
+    shape: card.shape,
+    rarity: card.rarity,
+    showSynergy: false,
+  };
+
+  if (m) {
+    const pad = Math.round((compact ? 3 : 10) * dpr);
+    if (compact) {
+      // Fit the shape's bounding box to the art area (less side padding for I/L pieces).
+      let minC = 4, maxC = -1, minR = 4, maxR = -1;
+      for (let r = 0; r < m.length; r++) {
+        for (let c = 0; c < m[r].length; c++) {
+          if (!m[r][c]) continue;
+          if (c < minC) minC = c;
+          if (c > maxC) maxC = c;
+          if (r < minR) minR = r;
+          if (r > maxR) maxR = r;
+        }
+      }
+      if (maxC >= minC && maxR >= minR) {
+        const bw = maxC - minC + 1;
+        const bh = maxR - minR + 1;
+        const cell = Math.floor(Math.min((w - pad * 2) / bw, (h - pad * 2) / bh));
+        const ox = Math.floor((w - bw * cell) / 2);
+        const oy = Math.floor((h - bh * cell) / 2);
+        if (typeof drawBlockCell === 'function' && cell > 0) {
+          for (let r = minR; r <= maxR; r++) {
+            for (let c = minC; c <= maxC; c++) {
+              if (!m[r][c]) continue;
+              drawBlockCell(ctx, ox + (c - minC) * cell, oy + (r - minR) * cell, cell, blockOpts);
+            }
+          }
+        }
+      }
+    } else if (typeof drawBlockMatrix === 'function') {
+      const cell = Math.floor(Math.min((w - pad * 2) / 4, (h - pad * 2) / 4));
+      const ox = Math.floor((w - 4 * cell) / 2);
+      const oy = Math.floor((h - 4 * cell) / 2);
+      drawBlockMatrix(ctx, m, ox, oy, cell, blockOpts);
+    }
+  }
+
+  // Subtle border inside the art.
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = Math.max(1, Math.round((compact ? 1 : 2) * dpr));
+  ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, w - ctx.lineWidth, h - ctx.lineWidth);
+}
+
 function formatStatsList(stats) {
   const parts = [];
   if (stats.hp)            parts.push(`HP ${stats.hp}`);
@@ -1317,6 +1476,74 @@ function formatStatsList(stats) {
   if (stats.passiveIncome) parts.push(`+${stats.passiveIncome}/wave`);
   if (stats.baseHpBonus)   parts.push(`+${stats.baseHpBonus} base HP`);
   return parts;
+}
+
+function tallyDeckBreakdown(cards) {
+  const shapes = {};
+  const roles = {};
+  for (const c of cards) {
+    shapes[c.shape] = (shapes[c.shape] || 0) + 1;
+    roles[c.role] = (roles[c.role] || 0) + 1;
+  }
+  return { shapes, roles, total: cards.length };
+}
+
+function buildDeckBreakdownSig(cards) {
+  const { shapes, roles, total } = tallyDeckBreakdown(cards);
+  const shapePart = SHAPE_KEYS.map((s) => `${s}:${shapes[s] || 0}`).join(',');
+  const rolePart = Object.keys(ROLE_SORT_ORDER)
+    .sort((a, b) => ROLE_SORT_ORDER[a] - ROLE_SORT_ORDER[b])
+    .map((r) => `${r}:${roles[r] || 0}`)
+    .join(',');
+  return `${total}|${shapePart}|${rolePart}`;
+}
+
+function formatDeckBreakdownHtml(cards) {
+  if (!cards.length) {
+    return '<p class="muted deck-breakdown-empty">No cards in deck.</p>';
+  }
+  const { shapes, roles, total } = tallyDeckBreakdown(cards);
+
+  let shapeRows = '';
+  for (const shape of SHAPE_KEYS) {
+    const n = shapes[shape] || 0;
+    if (n <= 0) continue;
+    const color = CONFIG.COLORS[shape] || '#94a3b8';
+    shapeRows += (
+      `<li class="deck-breakdown-row deck-breakdown-row--shape">` +
+      `<span class="deck-shape-badge" style="background:${color}" title="${shape}">${shape}</span>` +
+      `<span class="deck-breakdown-count">${n}</span>` +
+      `</li>`
+    );
+  }
+
+  let roleRows = '';
+  const roleKeys = Object.keys(ROLE_SORT_ORDER).sort((a, b) => ROLE_SORT_ORDER[a] - ROLE_SORT_ORDER[b]);
+  for (const role of roleKeys) {
+    const n = roles[role] || 0;
+    if (n <= 0) continue;
+    const pct = Math.round((n / total) * 100);
+    const color = CONFIG.ROLE_COLORS[role] || '#94a3b8';
+    const name = ROLE_DISPLAY_NAMES[role] || role;
+    roleRows += (
+      `<li class="deck-breakdown-row deck-breakdown-row--role">` +
+      `<span class="deck-breakdown-label deck-role-name">${name}</span>` +
+      `<span class="deck-breakdown-bar" aria-hidden="true"><span class="deck-breakdown-bar-fill" style="width:${pct}%;background:${color}"></span></span>` +
+      `<span class="deck-breakdown-count">${n}</span>` +
+      `</li>`
+    );
+  }
+
+  return (
+    `<div class="deck-breakdown-section">` +
+    `<h4 class="deck-breakdown-heading">Piece shapes</h4>` +
+    `<ul class="deck-breakdown-list deck-breakdown-list--shapes">${shapeRows}</ul>` +
+    `</div>` +
+    `<div class="deck-breakdown-section">` +
+    `<h4 class="deck-breakdown-heading">Tower roles</h4>` +
+    `<ul class="deck-breakdown-list">${roleRows}</ul>` +
+    `</div>`
+  );
 }
 
 const SHAPE_SORT_ORDER = Object.fromEntries(SHAPE_KEYS.map((s, i) => [s, i]));

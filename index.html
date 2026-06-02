@@ -6,7 +6,7 @@
 <title>Stackwave Defense</title>
 <link rel="stylesheet" href="assets/fonts/fonts.css" />
 <link rel="manifest" href="manifest.json" />
-<link rel="stylesheet" href="styles.css?v=44" />
+<link rel="stylesheet" href="styles.css?v=53" />
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6914309383865227"
      crossorigin="anonymous" data-swd-ads></script>
 </head>
@@ -113,7 +113,7 @@
         <div class="hud-stat"><span>Speed Tier</span><span id="speed-tier">1</span></div>
         <div class="hud-stat"><span>Pieces Left</span><span id="pieces-left">--</span></div>
         <div class="hud-stat"><span>Enemies Left</span><span id="enemies-left">--</span></div>
-        <div class="hud-stat"><span>Wave Speed (F)</span><span id="wave-speed">3x</span></div>
+        <div class="hud-stat"><span>Wave Speed (F)</span><span id="wave-speed">1x</span></div>
       </div>
     </div>
 
@@ -148,7 +148,7 @@
   <aside id="hud-right" class="hud-panel space-panel">
     <details class="hud-collapsible hud-section deck-panel" open>
       <summary>Deck <span class="muted" id="deck-count"></span></summary>
-      <div id="deck-chips" class="deck-chips"></div>
+      <div id="deck-breakdown" class="deck-breakdown"></div>
     </details>
 
     <details class="hud-collapsible hud-section controls hud-desktop-only" open>
@@ -186,9 +186,9 @@
         <fieldset class="settings-wave-speed">
           <legend class="settings-section-label">Wave speed</legend>
           <div class="settings-wave-speed-btns" role="radiogroup" aria-label="Wave speed">
-            <label class="settings-speed-btn"><input type="radio" name="wave-speed-mobile" value="1" data-setting="defaultWaveSpeed" /> 1×</label>
+            <label class="settings-speed-btn"><input type="radio" name="wave-speed-mobile" value="1" data-setting="defaultWaveSpeed" checked /> 1×</label>
             <label class="settings-speed-btn"><input type="radio" name="wave-speed-mobile" value="2" data-setting="defaultWaveSpeed" /> 2×</label>
-            <label class="settings-speed-btn"><input type="radio" name="wave-speed-mobile" value="3" data-setting="defaultWaveSpeed" checked /> 3×</label>
+            <label class="settings-speed-btn"><input type="radio" name="wave-speed-mobile" value="3" data-setting="defaultWaveSpeed" /> 3×</label>
           </div>
           <p class="muted settings-hint">Applies to the current run and new runs.</p>
         </fieldset>
@@ -217,9 +217,9 @@
       <fieldset class="settings-wave-speed settings-wave-speed-desktop">
         <legend class="settings-section-label">Default wave speed</legend>
         <div class="settings-wave-speed-btns" role="radiogroup" aria-label="Default wave speed">
-          <label class="settings-speed-btn"><input type="radio" name="wave-speed-desktop" value="1" data-setting="defaultWaveSpeed" /> 1×</label>
+          <label class="settings-speed-btn"><input type="radio" name="wave-speed-desktop" value="1" data-setting="defaultWaveSpeed" checked /> 1×</label>
           <label class="settings-speed-btn"><input type="radio" name="wave-speed-desktop" value="2" data-setting="defaultWaveSpeed" /> 2×</label>
-          <label class="settings-speed-btn"><input type="radio" name="wave-speed-desktop" value="3" data-setting="defaultWaveSpeed" checked /> 3×</label>
+          <label class="settings-speed-btn"><input type="radio" name="wave-speed-desktop" value="3" data-setting="defaultWaveSpeed" /> 3×</label>
         </div>
       </fieldset>
       <label>Master volume <input type="range" data-setting="masterVolume" min="0" max="1" step="0.05" /></label>
@@ -423,8 +423,8 @@
 </div>
 
 <script src="js/platform.js?v=39"></script>
-<script src="js/config.js?v=32"></script>
-<script src="js/settings.js?v=42"></script>
+<script src="js/config.js?v=33"></script>
+<script src="js/settings.js?v=43"></script>
 <script src="js/seed.js?v=31"></script>
 <script src="js/audio.js?v=31"></script>
 <script src="js/stats.js?v=45"></script>
@@ -443,11 +443,11 @@
 <script src="js/towers.js?v=31"></script>
 <script src="js/waves.js?v=31"></script>
 <script src="js/tutorial.js?v=3"></script>
-<script src="js/ui.js?v=44"></script>
+<script src="js/ui.js?v=52"></script>
 <script src="js/input.js?v=42"></script>
-<script src="js/sprites.js?v=31"></script>
+<script src="js/sprites.js?v=32"></script>
 <script src="js/render.js?v=31"></script>
-<script src="js/game.js?v=46"></script>
+<script src="js/game.js?v=47"></script>
 <script src="js/starfield.js?v=31"></script>
 <script src="js/main.js?v=41"></script>
 <script src="js/ads.js?v=31"></script>

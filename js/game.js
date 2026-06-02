@@ -31,7 +31,7 @@ class Game {
     this.input = null;
     this.shopCards = []; // currently offered shop cards (each annotated with .bought boolean)
     this.pendingShopBuyIndex = -1; // shop card awaiting deck swap (-1 = none)
-    this.waveSpeed = CONFIG.DEFAULT_WAVE_SPEED ?? 3;  // player-controlled wave time-scale (1x / 2x / 3x)
+    this.waveSpeed = CONFIG.DEFAULT_WAVE_SPEED ?? 1;  // player-controlled wave time-scale (1x / 2x / 3x)
     this.waveStats = { kills: 0, points: 0, income: 0 };
     this.heldCard = null;          // Tetris-style hold slot
     this.holdUsedThisPiece = false; // reset on lock so each spawn allows one hold
@@ -160,7 +160,7 @@ class Game {
     }
     const defSpeed = typeof getSetting === 'function'
       ? getSetting('defaultWaveSpeed')
-      : (CONFIG.DEFAULT_WAVE_SPEED ?? 3);
+      : (CONFIG.DEFAULT_WAVE_SPEED ?? 1);
     this.waveSpeed = defSpeed;
     this.phase = 'PLACING_BASE';
     this.piecesLeftThisBuild = 1;
@@ -189,7 +189,7 @@ class Game {
     this.deck = new Deck([], () => 0.5);
     this.activePiece = null;
     this.paused = true;
-    this.waveSpeed = CONFIG.DEFAULT_WAVE_SPEED ?? 3;
+    this.waveSpeed = CONFIG.DEFAULT_WAVE_SPEED ?? 1;
     this._tutorialPlaceTimer = 0;
     if (typeof AudioEngine !== 'undefined') {
       AudioEngine.unlock?.();
@@ -669,7 +669,8 @@ class Game {
   }
 
   updateWave(dt) {
-    const dtScaled = dt * (this.waveSpeed || 1);
+    const scale = CONFIG.WAVE_SPEED_SCALE ?? 1;
+    const dtScaled = dt * (this.waveSpeed || 1) * scale;
     if (this.tutorialActive) {
       this._tutorialWaveElapsed = (this._tutorialWaveElapsed || 0) + dt;
       const spCheck = this.waveSpawner;

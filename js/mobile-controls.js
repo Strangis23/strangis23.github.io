@@ -48,7 +48,7 @@ class MobileControls {
     }
 
     if (this.waveSpeedBtn) {
-      const def = CONFIG.DEFAULT_WAVE_SPEED ?? 3;
+      const def = CONFIG.DEFAULT_WAVE_SPEED ?? 1;
       this.waveSpeedBtn.textContent = `${this.game.waveSpeed || def}x`;
     }
 

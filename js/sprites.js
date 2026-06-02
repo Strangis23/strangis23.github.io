@@ -41,7 +41,7 @@ function blockCellFallbackColor(role, shape, isBase) {
   return (CONFIG.ROLE_COLORS && role && CONFIG.ROLE_COLORS[role]) || CONFIG.COLORS[shape];
 }
 
-function drawRolePatternFallback(ctx, role, px, py, cellPx) {
+function drawRolePatternFallback(ctx, role, px, py, cellPx, highContrast = false) {
   const inset = 2;
   const w = cellPx - inset * 2;
   const cx = px + cellPx / 2;
@@ -50,9 +50,9 @@ function drawRolePatternFallback(ctx, role, px, py, cellPx) {
   ctx.beginPath();
   ctx.rect(px + inset, py + inset, w, cellPx - inset * 2);
   ctx.clip();
-  ctx.strokeStyle = 'rgba(0,0,0,0.28)';
-  ctx.fillStyle = 'rgba(255,255,255,0.14)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = highContrast ? 'rgba(0,0,0,0.62)' : 'rgba(0,0,0,0.28)';
+  ctx.fillStyle = highContrast ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.14)';
+  ctx.lineWidth = highContrast ? 2 : 1;
 
   switch (role) {
     case 'wall':
@@ -127,7 +127,7 @@ function drawRolePatternFallback(ctx, role, px, py, cellPx) {
   ctx.restore();
 }
 
-function drawBlockCellFallback(ctx, px, py, cellPx, role, shape) {
+function drawBlockCellFallback(ctx, px, py, cellPx, role, shape, highContrast = false) {
   const color = blockCellFallbackColor(role, shape, false);
   ctx.fillStyle = color;
   ctx.fillRect(px + 1, py + 1, cellPx - 2, cellPx - 2);
@@ -136,7 +136,7 @@ function drawBlockCellFallback(ctx, px, py, cellPx, role, shape) {
   grad.addColorStop(1, 'rgba(0,0,0,0.35)');
   ctx.fillStyle = grad;
   ctx.fillRect(px + 1, py + 1, cellPx - 2, cellPx - 2);
-  drawRolePatternFallback(ctx, role, px, py, cellPx);
+  drawRolePatternFallback(ctx, role, px, py, cellPx, highContrast);
   const glyph = ROLE_GLYPHS && ROLE_GLYPHS[role];
   if (glyph) {
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -164,11 +164,23 @@ function drawBlockCell(ctx, px, py, cellPx, opts = {}) {
   ctx.save();
   if (alpha < 1) ctx.globalAlpha = alpha;
 
+  const highContrast = typeof getSetting === 'function' && getSetting('colorblindPatterns');
   const sprite = getBlockSprite(role);
   if (sprite) {
     ctx.drawImage(sprite, px, py, cellPx, cellPx);
+    if (highContrast) {
+      drawRolePatternFallback(ctx, role, px, py, cellPx, true);
+      const glyph = ROLE_GLYPHS && ROLE_GLYPHS[role];
+      if (glyph) {
+        ctx.fillStyle = 'rgba(0,0,0,0.72)';
+        ctx.font = `bold ${Math.floor(cellPx * 0.48)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(glyph, px + cellPx / 2, py + cellPx / 2);
+      }
+    }
   } else {
-    drawBlockCellFallback(ctx, px, py, cellPx, role, shape);
+    drawBlockCellFallback(ctx, px, py, cellPx, role, shape, highContrast);
   }
 
   if (isBase) {

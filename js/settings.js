@@ -9,7 +9,7 @@ const DEFAULT_SETTINGS = {
   reduceMotion: false,
   pathPreview: true,
   colorblindPatterns: false,
-  defaultWaveSpeed: 3,
+  defaultWaveSpeed: 1,
 };
 
 let _settings = null;

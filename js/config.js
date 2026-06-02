@@ -21,9 +21,11 @@ const CONFIG = {
   // Enemy speed multiplier per speed tier (every 10 waves). Mirrors fall speed.
   ENEMY_SPEED_MUL: [1.05, 1.12, 1.20, 1.28, 1.36, 1.44, 1.53, 1.62, 1.72, 1.84],
 
-  // Player-controlled wave time-scale options. Cycled by pressing F during waves.
+  // Player-controlled wave time-scale (1× / 2× / 3×). Cycled with F during waves.
   WAVE_SPEED_STEPS: [1, 2, 3],
-  DEFAULT_WAVE_SPEED: 3,
+  DEFAULT_WAVE_SPEED: 1,
+  /** Applied on top of waveSpeed during WAVE (1× setting = 3× sim speed vs unscaled). */
+  WAVE_SPEED_SCALE: 3,
   /** Pause after last enemy dies before build/shop (seconds, real time). */
   WAVE_END_DELAY: 1,
 
