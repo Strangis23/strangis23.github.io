@@ -24,6 +24,8 @@ class Game {
     this.paused = false;
     this.helpOpen = false;
     this._wasPausedBeforeHelp = false;
+    this.settingsModalOpen = false;
+    this._wasPausedBeforeSettings = false;
     this.banner = null;
     this.waveSpawner = null;
     this.waveEnding = false;
@@ -102,6 +104,7 @@ class Game {
 
   // Spend points to fully restore a damaged cell. Returns { ok, spent, reason }.
   repairCell(x, y) {
+    if (this.paused) return { ok: false, reason: 'Game is paused' };
     if (this.phase !== 'BUILD' && this.phase !== 'PLACING_BASE') {
       return { ok: false, reason: 'Repairs only available during the build phase' };
     }
@@ -280,7 +283,12 @@ class Game {
     if (this.phase === 'GAMEOVER' || this.phase === 'WIN' || this.phase === 'IDLE') return;
     if (this.tutorialActive && (this.tutorialStep === 'intro' || this.tutorialStep === 'outro')) return;
     if (this.helpOpen) {
-      this.closeHelp();
+      if (window.TTD?.ui?.closeHelp) window.TTD.ui.closeHelp();
+      else this.closeHelp();
+      return;
+    }
+    if (this.settingsModalOpen) {
+      if (window.TTD?.ui?.closeSettings) window.TTD.ui.closeSettings();
       return;
     }
     this.paused = !this.paused;
@@ -308,6 +316,25 @@ class Game {
     this.helpOpen = false;
     this.paused = this._wasPausedBeforeHelp;
     if (!this.paused) this.banner = null;
+    window.dispatchEvent(new CustomEvent('ttd-pause-changed', { detail: { paused: this.paused } }));
+  }
+
+  openSettingsModal() {
+    if (this.phase === 'GAMEOVER' || this.phase === 'WIN' || this.phase === 'IDLE') return;
+    this._wasPausedBeforeSettings = this.paused;
+    this.settingsModalOpen = true;
+    this.paused = true;
+    this.input?.clearHeld?.();
+    this.banner = null;
+    window.dispatchEvent(new CustomEvent('ttd-pause-changed', { detail: { paused: this.paused } }));
+  }
+
+  closeSettingsModal() {
+    if (!this.settingsModalOpen) return;
+    this.settingsModalOpen = false;
+    this.paused = this._wasPausedBeforeSettings;
+    if (!this.paused) this.banner = null;
+    window.dispatchEvent(new CustomEvent('ttd-pause-changed', { detail: { paused: this.paused } }));
   }
 
   recomputeBasePool() {
@@ -410,6 +437,15 @@ class Game {
   fallInterval() {
     const mul = (this.difficulty && this.difficulty.fallSpeedMul) || 1;
     return CONFIG.FALL_SPEEDS[this.speedTier()] / mul;
+  }
+
+  /** Line-clear points scale with fall speed tier (faster drops → higher bonuses). */
+  lineClearBonus(lineCount) {
+    const base = CONFIG.LINE_BONUS[lineCount] || (lineCount * 200);
+    const speeds = CONFIG.FALL_SPEEDS || [1];
+    const tier = Math.min(speeds.length - 1, Math.max(0, this.speedTier()));
+    const mul = speeds[0] / speeds[tier];
+    return Math.floor(base * mul);
   }
 
   piecesPerBuild() {
@@ -582,8 +618,13 @@ class Game {
         this.effects.push({ type: 'lineClear', x: 0, y, t: 0, life: 0.4 });
       }
       this.grid.clearRows(fullRows);
-      const bonus = CONFIG.LINE_BONUS[fullRows.length] || (fullRows.length * 200);
+      const bonus = this.lineClearBonus(fullRows.length);
       this.addPoints(bonus);
+      const lineLabels = { 1: 'Line clear', 2: 'Double', 3: 'Triple', 4: 'Quad' };
+      const label = lineLabels[fullRows.length] || `${fullRows.length} lines`;
+      const tier = this.speedTier() + 1;
+      const speedNote = tier > 1 ? ` · speed tier ${tier}` : '';
+      this.setBanner(`${label}! +${bonus} pts${speedNote}`, 1.1);
       this.runStats.lineClears += 1;
       this.runStats.linesCleared += fullRows.length;
       if (fullRows.length > this.runStats.maxLinesAtOnce) {
@@ -706,7 +747,7 @@ class Game {
     this._trackBaseHpFloor();
     const killed = this.enemies.filter((e) => e.dead && !e.despawned);
     for (const e of killed) {
-      const scale = CONFIG.KILL_REWARD_WAVE_SCALE ?? 0.012;
+      const scale = CONFIG.KILL_REWARD_WAVE_SCALE ?? 0.015;
       const pts = Math.floor(e.stats.reward * (1 + (this.wave - 1) * scale));
       if (!this.tutorialActive) this.addPoints(pts);
       this.waveStats.kills += 1;
@@ -714,7 +755,7 @@ class Game {
       if (this.runStats) {
         this.runStats.totalKills += 1;
         if (e.eliteOf) this.runStats.eliteKills += 1;
-        if (e.type === 'boss') this.runStats.bossKills += 1;
+        if (e.isElite) this.runStats.bossKills += 1;
         if (!this.tutorialActive && this.runStats.totalKills === 1
             && typeof notifyAchievementUnlock === 'function') {
           notifyAchievementUnlock(this, 'first_blood');

@@ -2,6 +2,8 @@
 
 Pre-built **web** packages for the **current branch** live in this folder. Download the zip, unzip it anywhere on your computer, and open `index.html` in a browser (or serve the folder over HTTP).
 
+On GitHub Pages: `https://strangis23.github.io/downloads/` (see [`DEPLOY.md`](../DEPLOY.md)).
+
 See [`manifest.json`](manifest.json) for the current version, file size, and SHA-256 checksum.
 
 ## Web bundle

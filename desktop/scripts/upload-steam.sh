@@ -11,11 +11,13 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$ROOT/.." && pwd)"
 STEAMCMD="${STEAMCMD:-steamcmd}"
-BUILD_VDF="${1:-$ROOT/steam/content/app_build.vdf}"
+BUILD_VDF="${1:-$REPO_ROOT/steam/content/app_build.vdf}"
 
 if [[ ! -f "$BUILD_VDF" ]]; then
-  echo "Missing $BUILD_VDF — copy steam/content/app_build.vdf.example and edit AppID/depots."
+  echo "Missing $BUILD_VDF"
+  echo "Copy steam/content/app_build.vdf.example → steam/content/app_build.vdf and set App/depot IDs."
   exit 1
 fi
 

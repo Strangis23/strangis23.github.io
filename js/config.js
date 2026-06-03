@@ -146,7 +146,7 @@ const CONFIG = {
   MATCHUP_WEAK_MULT: 1.5,
   MATCHUP_RESIST_MULT: 0.55,
 
-  // Tetris-style line clear bonuses (1/2/3/4 lines).
+  // Tetris-style line clear bonuses (1/2/3/4 lines) at speed tier 1; scaled up with fall speed tier.
   LINE_BONUS: { 1: 50, 2: 150, 3: 250, 4: 400 },
 
   // Spawn schedule.

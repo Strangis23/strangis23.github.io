@@ -3,11 +3,16 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const WINDOW = require('./window-config');
 
+let steamApiReady = false;
+try {
+  steamApiReady = ipcRenderer.sendSync('sync-steam-ready');
+} catch { /* main not ready yet */ }
+
 contextBridge.exposeInMainWorld('swdPlatform', {
   isDesktop: true,
-  isSteam: true,
+  isSteam: steamApiReady,
   hasAds: false,
-  fixedWindow: !WINDOW.RESIZABLE,
+  fixedWindow: WINDOW.FIXED_LAYOUT,
   windowWidth: WINDOW.WIDTH,
   windowHeight: WINDOW.HEIGHT,
   hudPanelWidth: WINDOW.HUD_PANEL_WIDTH,

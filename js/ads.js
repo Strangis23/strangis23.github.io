@@ -1,14 +1,19 @@
 // Banner ads (Google AdSense). Disabled in desktop/Steam builds via Platform.hasAds.
 (function () {
   if (typeof Platform !== 'undefined' && !Platform.hasAds) return;
+
   const ADS = {
     enabled: true,
     clientId: 'ca-pub-6914309383865227',
-    bannerSlot: '', // add display ad unit slot ID after creating a banner unit in AdSense
+    // Override via <div id="ad-slot" data-ad-slot="..."> or <meta name="swd-ad-slot" content="...">
+    bannerSlot: '',
   };
 
   const slot = document.getElementById('ad-slot');
   if (!slot) return;
+
+  const metaSlot = document.querySelector('meta[name="swd-ad-slot"]')?.getAttribute('content');
+  const bannerSlot = (slot.dataset.adSlot || metaSlot || ADS.bannerSlot || '').trim();
 
   function isLocalDev() {
     const host = location.hostname;
@@ -17,11 +22,11 @@
 
   function showDevPlaceholder() {
     slot.innerHTML =
-      '<p class="ad-placeholder muted">Ad banner · add your AdSense IDs in js/ads.js</p>';
+      '<p class="ad-placeholder muted">Ad banner · set <code>data-ad-slot</code> on #ad-slot (see docs/ADSENSE.md)</p>';
   }
 
   function loadBanner() {
-    if (!ADS.enabled || !ADS.clientId || !ADS.bannerSlot) {
+    if (!ADS.enabled || !ADS.clientId || !bannerSlot) {
       if (isLocalDev()) showDevPlaceholder();
       return;
     }
@@ -30,7 +35,7 @@
     ins.className = 'adsbygoogle';
     ins.style.display = 'block';
     ins.setAttribute('data-ad-client', ADS.clientId);
-    ins.setAttribute('data-ad-slot', ADS.bannerSlot);
+    ins.setAttribute('data-ad-slot', bannerSlot);
     ins.setAttribute('data-ad-format', 'horizontal');
     ins.setAttribute('data-full-width-responsive', 'true');
     slot.appendChild(ins);
@@ -42,7 +47,7 @@
     }
   }
 
-  if (isLocalDev() && (!ADS.clientId || !ADS.bannerSlot)) {
+  if (isLocalDev() && !bannerSlot) {
     showDevPlaceholder();
   } else {
     loadBanner();

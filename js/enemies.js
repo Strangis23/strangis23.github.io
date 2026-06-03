@@ -204,7 +204,12 @@ class Brute extends Walker {
     const hpScale = 1 + Math.max(0, wave - 1) * (CONFIG.ENEMY_HP_GROWTH || 0.07);
     const speedMulTable = CONFIG.ENEMY_SPEED_MUL || [1];
     const tier = Math.min(speedMulTable.length - 1, Math.max(0, Math.floor((wave - 1) / 10)));
-    this.stats = { ...base, hp: Math.floor(base.hp * hpScale), speed: base.speed * speedMulTable[tier] };
+    const diffMul = (typeof window !== 'undefined' && window.TTD?.game?.difficulty?.enemySpeedMul) || 1;
+    this.stats = {
+      ...base,
+      hp: Math.floor(base.hp * hpScale),
+      speed: base.speed * speedMulTable[tier] * diffMul,
+    };
     this.maxHp = this.stats.hp;
     this.hp = this.stats.hp;
     this.pathMode = 'brute';

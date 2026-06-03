@@ -14,7 +14,15 @@ A pre-built **web** package for **`main`** is committed under [`downloads/`](dow
 
 Build info and SHA-256 checksum: [`downloads/manifest.json`](downloads/manifest.json). Refresh with `./scripts/package-downloads.sh`.
 
-When this repo is published to GitHub Pages, the same file is also at `https://strangis23.github.io/downloads/stackwave-defense-1.0.0-web.zip`.
+When published to GitHub Pages:
+
+| What | URL |
+| --- | --- |
+| Play in browser | `https://strangis23.github.io/tetrisGame/` |
+| Landing page | `https://strangis23.github.io/` |
+| Offline zip | `https://strangis23.github.io/downloads/stackwave-defense-1.0.0-web.zip` |
+
+Deploy layout and CI are documented in [`DEPLOY.md`](DEPLOY.md).
 
 Linux and Windows desktop builds are not stored in the repo (too large for GitHub). Build them locally with `cd desktop && npm run build:linux` / `npm run build:win` — see [`desktop/README.md`](desktop/README.md) and [`downloads/README.md`](downloads/README.md).
 
@@ -59,7 +67,7 @@ Behaviour is tied to the **card's role**, not the shape. Any shape can carry any
 | epic | purple | 2800 | Strong specialists, piercer, multishot |
 | legendary | gold | 7500 | Game-changing effects |
 
-Points come from **enemy kills**, **line clears** (50 / 150 / 250 / 400 for 1–4 lines), and **wall passive income** at the start of each wave (+2–9 per wall cell by rarity).
+Points come from **enemy kills**, **line clears** (50 / 150 / 250 / 400 for 1–4 lines at tier 1, scaled up as fall speed increases every 10 waves), and **wall passive income** at the start of each wave (+2–9 per wall cell by rarity).
 
 Higher rarity slots become more common in the shop as you progress:
 
@@ -113,8 +121,11 @@ On mobile, the board stays on top with tabbed HUD panels (**Game**, **Deck**, **
 index.html
 highscores.html
 styles.css
+DEPLOY.md         GitHub Pages layout + CI
+docs/ADSENSE.md   AdSense slot setup
 downloads/        pre-built web + desktop packages (see downloads/README.md)
-scripts/          package-downloads.sh — refresh downloads/ for the current branch
+scripts/          package-downloads.sh, build-pages-site.sh
+github-pages-root/  landing page (deployed to site root)
 assets/fonts/     bundled Exo 2 + Orbitron (offline)
 desktop/          Electron + Steamworks wrapper
 steam/            Achievement API names + SteamPipe templates
@@ -126,14 +137,22 @@ js/
 
 ## Running (web)
 
-Any static HTTP server works. From the project root:
+From the project root (game at `/`):
 
 ```bash
 python3 -m http.server 8000
-# then open http://localhost:8000
+# http://localhost:8000/
 ```
 
-Or just double-click `index.html` (older browsers may block `file://` access).
+**Same layout as GitHub Pages** (landing + `/tetrisGame/`):
+
+```bash
+./scripts/build-pages-site.sh
+python3 -m http.server 8000 --directory _site
+# http://localhost:8000/  ·  http://localhost:8000/tetrisGame/
+```
+
+Or double-click `index.html` (some browsers restrict `file://` and service workers).
 
 ## Tips
 

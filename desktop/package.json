@@ -10,12 +10,15 @@
   "scripts": {
     "start": "electron .",
     "start:steam": "STEAM_APP_ID=480 electron .",
+    "icons": "bash scripts/generate-icons.sh",
     "pack": "electron-builder --dir",
-    "build": "electron-builder --win --linux",
-    "build:win": "electron-builder --win",
-    "build:linux": "electron-builder --linux",
+    "build": "npm run icons && electron-builder --win --linux",
+    "build:win": "npm run icons && electron-builder --win",
+    "build:linux": "npm run icons && electron-builder --linux",
+    "build:release": "npm run icons && electron-builder --win --linux",
     "stage:steam": "bash scripts/stage-steam-content.sh",
-    "steam:upload": "bash scripts/upload-steam.sh"
+    "steam:upload": "bash scripts/upload-steam.sh",
+    "steam:ship": "npm run build:release && npm run stage:steam"
   },
   "build": {
     "appId": "com.stackwave.defense",
@@ -54,7 +57,7 @@
       "icon": "build/icon.ico"
     },
     "linux": {
-      "target": ["AppImage", "tar.gz"],
+      "target": ["tar.gz"],
       "icon": "build/icon.png",
       "category": "Game",
       "executableName": "stackwave-defense"

@@ -43,8 +43,30 @@ function getSetting(key) {
   return loadSettings()[key];
 }
 
-function querySettingInputs() {
-  return document.querySelectorAll('[data-setting]');
+function activeSettingsForm() {
+  const modal = document.getElementById('settings-modal');
+  if (modal && !modal.classList.contains('hidden')) {
+    return document.getElementById('settings-form');
+  }
+  const gameRoot = document.getElementById('game-root');
+  if (gameRoot?.dataset.mobileTab === 'settings') {
+    return document.getElementById('settings-form-mobile');
+  }
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    const mobile = window.matchMedia('(max-width: 1100px), (hover: none) and (pointer: coarse)').matches
+      && !document.documentElement.classList.contains('platform-desktop');
+    if (mobile) return document.getElementById('settings-form-mobile');
+  }
+  return document.getElementById('settings-form') || document.getElementById('settings-form-mobile');
+}
+
+function querySettingInputs(root) {
+  const scope = root || document;
+  return scope.querySelectorAll('[data-setting]');
+}
+
+function invalidateSettingsCache() {
+  _settings = null;
 }
 
 function applySettingsToForm() {
@@ -60,8 +82,9 @@ function applySettingsToForm() {
 }
 
 function readSettingsFromForm() {
+  const form = activeSettingsForm();
   const next = { ...loadSettings() };
-  for (const el of querySettingInputs()) {
+  for (const el of querySettingInputs(form || document)) {
     const key = el.dataset.setting;
     if (!key) continue;
     if (el.type === 'checkbox') next[key] = el.checked;
@@ -71,5 +94,7 @@ function readSettingsFromForm() {
       next[key] = parseFloat(el.value);
     }
   }
-  return saveSettings(next);
+  const saved = saveSettings(next);
+  applySettingsToForm();
+  return saved;
 }

@@ -39,7 +39,7 @@ function createWindow() {
     maxWidth: RESIZABLE ? undefined : WIDTH,
     maxHeight: RESIZABLE ? undefined : HEIGHT,
     resizable: RESIZABLE,
-    maximizable: true,
+    maximizable: RESIZABLE,
     fullscreenable: true,
     title: 'Stackwave Defense',
     backgroundColor: '#030712',
@@ -78,6 +78,10 @@ function createWindow() {
 }
 
 function registerIpc() {
+  ipcMain.on('sync-steam-ready', (event) => {
+    event.returnValue = !!(steam && steam.isReady());
+  });
+
   ipcMain.handle('app-quit', () => {
     if (steam) steam.shutdown();
     app.quit();
@@ -128,7 +132,11 @@ function registerIpc() {
 app.whenReady().then(() => {
   steam = createSteamBridge(STEAM_APP_ID);
 
-  if (process.env.SWD_REQUIRE_STEAM === '1' && !steam.isReady()) {
+  const requireSteam =
+    process.env.SWD_REQUIRE_STEAM === '1'
+    || (app.isPackaged && process.env.SWD_REQUIRE_STEAM !== '0');
+
+  if (requireSteam && !steam.isReady()) {
     dialog.showErrorBox(
       'Steam Required',
       'Please launch Stackwave Defense through Steam.',

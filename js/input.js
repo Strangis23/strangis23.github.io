@@ -22,11 +22,24 @@ class Input {
     this._touchHoldTimer = null;
     this._touchHoldFired = false;
 
+    this._gpIndex = null;
+    this._gpPrev = {};
+    this._gpMoveHeld = { left: false, right: false, down: false };
+    this._gpStickUp = false;
+    this._gpDeadzone = 0.35;
+    this._gpButtons = {
+      A: 0, B: 1, X: 2, Y: 3,
+      LB: 4, RB: 5, LT: 6, RT: 7,
+      BACK: 8, START: 9,
+      UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15,
+    };
+
     this._keyToAction = {
       ArrowLeft: 'left',
       ArrowRight: 'right',
       ArrowDown: 'down',
       ArrowUp: 'rotate',
+      KeyW: 'rotate',
       KeyR: 'rotate',
       KeyZ: 'rotateCCW',
       KeyC: 'hold',
@@ -44,6 +57,15 @@ class Input {
     canvas.addEventListener('pointerup', (e) => this.onTouchPointerUp(e));
     canvas.addEventListener('pointercancel', (e) => this.onTouchPointerUp(e));
 
+    window.addEventListener('gamepadconnected', (e) => { this._gpIndex = e.gamepad.index; });
+    window.addEventListener('gamepaddisconnected', (e) => {
+      if (this._gpIndex === e.gamepad.index) {
+        this._gpIndex = null;
+        this._clearGamepadMoveHeld();
+        this._gpPrev = {};
+      }
+    });
+
     setInterval(() => this.tick(0.016), 16);
   }
 
@@ -59,7 +81,112 @@ class Input {
   clearHeld() {
     this.held = {};
     this.repeatTimers = {};
+    this._clearGamepadMoveHeld();
     this.game.softDrop(false);
+  }
+
+  _clearGamepadMoveHeld() {
+    for (const action of ['left', 'right', 'down']) {
+      if (this._gpMoveHeld[action]) {
+        this._gpMoveHeld[action] = false;
+        this.holdAction(action, false);
+      }
+    }
+  }
+
+  _activeGamepad() {
+    const list = navigator.getGamepads?.();
+    if (!list) return null;
+    if (this._gpIndex != null && list[this._gpIndex]?.connected) return list[this._gpIndex];
+    for (const gp of list) {
+      if (gp?.connected) return gp;
+    }
+    return null;
+  }
+
+  _gpPressed(gp, idx) {
+    const btn = gp.buttons[idx];
+    return !!(btn && (btn.pressed || btn.value > 0.5));
+  }
+
+  _gpJustPressed(gp, idx) {
+    return this._gpPressed(gp, idx) && !this._gpPrev[idx];
+  }
+
+  _setGpMove(action, on) {
+    if (on) {
+      if (!this._gpMoveHeld[action]) {
+        this._gpMoveHeld[action] = true;
+        this.holdAction(action, true);
+      }
+    } else if (this._gpMoveHeld[action]) {
+      this._gpMoveHeld[action] = false;
+      this.holdAction(action, false);
+    }
+  }
+
+  _pollGamepad() {
+    const gp = this._activeGamepad();
+    if (!gp) {
+      this._clearGamepadMoveHeld();
+      this._gpPrev = {};
+      this._gpStickUp = false;
+      return;
+    }
+
+    const B = this._gpButtons;
+    const g = this.game;
+    const nextPrev = {};
+
+    const mark = (idx) => { nextPrev[idx] = this._gpPressed(gp, idx); };
+    for (const idx of Object.values(B)) mark(idx);
+
+    const just = (idx) => this._gpPressed(gp, idx) && !this._gpPrev[idx];
+
+    if (just(B.START)) {
+      if (g.helpOpen) {
+        if (window.TTD?.ui?.closeHelp) window.TTD.ui.closeHelp();
+        else g.closeHelp();
+      } else g.togglePause();
+    } else if (just(B.BACK)) {
+      g.cycleWaveSpeed();
+    }
+
+    if (g.phase === 'GAMEOVER' || g.phase === 'WIN') {
+      if (just(B.A) || just(B.START)) g.startNewRun();
+      this._gpPrev = nextPrev;
+      return;
+    }
+
+    const moveActive = this.canControlPiece() && !g.paused;
+    if (moveActive) {
+      const lx = gp.axes[0] ?? 0;
+      const ly = gp.axes[1] ?? 0;
+      const left = this._gpPressed(gp, B.LEFT) || lx < -this._gpDeadzone;
+      const right = this._gpPressed(gp, B.RIGHT) || lx > this._gpDeadzone;
+      const down = this._gpPressed(gp, B.DOWN) || ly > this._gpDeadzone;
+      const up = this._gpPressed(gp, B.UP) || ly < -this._gpDeadzone;
+
+      if (left && !right) this._setGpMove('left', true);
+      else this._setGpMove('left', false);
+      if (right && !left) this._setGpMove('right', true);
+      else this._setGpMove('right', false);
+      this._setGpMove('down', down);
+
+      if ((up && !this._gpStickUp) || just(B.UP) || just(B.Y) || just(B.RB)) {
+        this.performAction('rotate');
+      }
+      this._gpStickUp = up;
+      if (just(B.LB)) this.performAction('rotateCCW');
+      if (just(B.X)) this.performAction('hold');
+      if (just(B.A) || just(B.RT)) this.performAction('hardDrop');
+      if (just(B.B)) this.performAction('rotateCCW');
+    } else {
+      this._clearGamepadMoveHeld();
+      this._gpStickUp = false;
+    }
+
+    this._gpPrev = nextPrev;
   }
 
   _clientToGrid(clientX, clientY) {
@@ -76,6 +203,7 @@ class Input {
   }
 
   tryRepairAt(clientX, clientY) {
+    if (this.game.paused) return false;
     const { gx, gy } = this._clientToGrid(clientX, clientY);
     if (!this.game.repairCell) return false;
     const cell = this.game.grid && this.game.grid.get(gx, gy);
@@ -93,6 +221,7 @@ class Input {
   }
 
   onClick(e) {
+    if (this.game.paused) return;
     if (Date.now() < this._suppressClickUntil) return;
     const { gx, gy } = this._clientToGrid(e.clientX, e.clientY);
     if (!this.game.repairCell) return;
@@ -203,12 +332,17 @@ class Input {
     const k = e.code;
 
     if (k === 'Escape') {
-      if (this.game.helpOpen) this.game.closeHelp();
+      if (this.game.helpOpen) {
+        if (window.TTD?.ui?.closeHelp) window.TTD.ui.closeHelp();
+        else this.game.closeHelp();
+      }
       return;
     }
     if (k === 'KeyP') {
-      if (this.game.helpOpen) this.game.closeHelp();
-      else this.game.togglePause();
+      if (this.game.helpOpen) {
+        if (window.TTD?.ui?.closeHelp) window.TTD.ui.closeHelp();
+        else this.game.closeHelp();
+      } else this.game.togglePause();
       return;
     }
     if (k === 'KeyF') { this.game.cycleWaveSpeed(); return; }
@@ -222,6 +356,11 @@ class Input {
 
     const action = this._keyToAction[k];
     if (!action) return;
+    e.preventDefault();
+    if (action === 'rotate' || action === 'rotateCCW' || action === 'hold' || action === 'hardDrop') {
+      this.performAction(action);
+      return;
+    }
     this.held[action] = 0;
     this.performAction(action);
   }
@@ -266,6 +405,7 @@ class Input {
   }
 
   tick(dt) {
+    this._pollGamepad();
     if (this.game.paused) return;
     const repeatActions = new Set(['left', 'right', 'down']);
     for (const action in this.held) {

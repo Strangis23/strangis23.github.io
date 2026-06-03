@@ -11,6 +11,7 @@ class UI {
     this.elPieces = document.getElementById('pieces-left');
     this.elEnemies = document.getElementById('enemies-left');
     this.elWaveSpeed = document.getElementById('wave-speed');
+    this.elPauseStatus = document.getElementById('pause-status');
     this.elWavePreview = document.getElementById('wave-preview');
     this.elPhase = document.getElementById('phase-indicator');
     this.elNextCanvas = document.getElementById('next-canvas');
@@ -153,6 +154,7 @@ class UI {
     window.addEventListener('ttd-wave-speed-changed', () => this.syncWaveSpeedRadios());
     window.addEventListener('ttd-settings-changed', () => this.syncWaveSpeedRadios());
     window.addEventListener('ttd-pause-changed', () => this.syncMobilePauseBtn());
+    this.initHudTapActions();
     if (typeof Platform !== 'undefined' && Platform.canControlWindow) {
       if (this.settingsDisplaySection) this.settingsDisplaySection.classList.remove('hidden');
       if (this.settingsFullscreenBtn) {
@@ -262,6 +264,46 @@ class UI {
 
   isMobileHud() {
     return this.mobileMq.matches && !document.documentElement.classList.contains('platform-desktop');
+  }
+
+  initHudTapActions() {
+    const fire = (action) => {
+      const input = this.game.input;
+      if (!input) return;
+      input.performAction(action);
+      if (action === 'pause') this.syncMobilePauseBtn();
+    };
+
+    for (const el of document.querySelectorAll('[data-hud-action]')) {
+      const action = el.dataset.hudAction;
+      if (!action) continue;
+      el.addEventListener('click', () => {
+        if (el.getAttribute('aria-disabled') === 'true') return;
+        fire(action);
+      });
+      el.addEventListener('keydown', (e) => {
+        if (e.code !== 'Enter' && e.code !== 'Space') return;
+        e.preventDefault();
+        if (el.getAttribute('aria-disabled') === 'true') return;
+        fire(action);
+      });
+    }
+  }
+
+  syncHudTapActions(game) {
+    const g = game || this.game;
+    const holdEl = document.querySelector('[data-hud-action="hold"]');
+    const pauseEl = document.querySelector('[data-hud-action="pause"]');
+    const holdOk = g.input?.canActOnPiece?.()
+      && g.difficulty?.holdEnabled !== false
+      && !g.holdUsedThisPiece;
+    if (holdEl) holdEl.setAttribute('aria-disabled', holdOk ? 'false' : 'true');
+    const pauseOk = g.phase !== 'GAMEOVER' && g.phase !== 'WIN' && g.phase !== 'IDLE'
+      && !(g.tutorialActive && (g.tutorialStep === 'intro' || g.tutorialStep === 'outro'));
+    if (pauseEl) pauseEl.setAttribute('aria-disabled', pauseOk ? 'false' : 'true');
+    if (this.elPauseStatus) {
+      this.elPauseStatus.textContent = g.paused ? 'Resume' : 'Pause';
+    }
   }
 
   isInActiveRun() {
@@ -411,6 +453,7 @@ class UI {
     applySettingsToForm();
     this.syncDisplayButtons();
     this.syncWaveSpeedRadios();
+    this.game.openSettingsModal();
     this.settingsModal.classList.remove('hidden');
     if (typeof AudioEngine !== 'undefined') AudioEngine.unlock();
   }
@@ -441,8 +484,12 @@ class UI {
   }
 
   closeSettings() {
-    if (!this.settingsModal) return;
-    this.settingsModal.classList.add('hidden');
+    if (this.settingsModal && !this.settingsModal.classList.contains('hidden')) {
+      this.settingsModal.classList.add('hidden');
+      this.game.closeSettingsModal();
+      this.syncMobilePauseBtn();
+      this.syncHudTapActions();
+    }
   }
 
   getRunStartOptions() {
@@ -959,6 +1006,7 @@ class UI {
     this.drawHoldPiece(game);
     this.renderWavePreview(game);
     this.renderDeckBreakdown(game);
+    this.syncHudTapActions(game);
     if (this.helpBtn) {
       const canHelp = game.phase !== 'IDLE' && game.phase !== 'GAMEOVER' && game.phase !== 'WIN';
       this.helpBtn.disabled = !canHelp;
@@ -1258,6 +1306,7 @@ function makeCardEl(card, opts = {}) {
     const name = document.createElement('div');
     name.className = 'card-name';
     name.textContent = card.name;
+    name.title = card.name;
 
     const badges = document.createElement('div');
     badges.className = 'card-badges';

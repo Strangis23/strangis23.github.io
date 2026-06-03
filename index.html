@@ -6,7 +6,7 @@
 <title>Stackwave Defense</title>
 <link rel="stylesheet" href="assets/fonts/fonts.css" />
 <link rel="manifest" href="manifest.json" />
-<link rel="stylesheet" href="styles.css?v=53" />
+<link rel="stylesheet" href="styles.css?v=54" />
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6914309383865227"
      crossorigin="anonymous" data-swd-ads></script>
 </head>
@@ -113,7 +113,12 @@
         <div class="hud-stat"><span>Speed Tier</span><span id="speed-tier">1</span></div>
         <div class="hud-stat"><span>Pieces Left</span><span id="pieces-left">--</span></div>
         <div class="hud-stat"><span>Enemies Left</span><span id="enemies-left">--</span></div>
-        <div class="hud-stat"><span>Wave Speed (F)</span><span id="wave-speed">1x</span></div>
+        <div class="hud-stat hud-tap-action" data-hud-action="waveSpeed" role="button" tabindex="0" aria-label="Cycle wave speed">
+          <span>Wave Speed (F)</span><span id="wave-speed">1x</span>
+        </div>
+        <div class="hud-stat hud-tap-action" data-hud-action="pause" role="button" tabindex="0" aria-label="Pause or resume">
+          <span>Pause (P)</span><span id="pause-status">Pause</span>
+        </div>
       </div>
     </div>
 
@@ -122,7 +127,7 @@
         <h3>Next</h3>
         <canvas id="next-canvas" width="72" height="72"></canvas>
       </div>
-      <div class="preview-block">
+      <div class="preview-block hud-tap-action" data-hud-action="hold" role="button" tabindex="0" aria-label="Hold piece">
         <h3>Hold (C)</h3>
         <canvas id="hold-canvas" width="72" height="72"></canvas>
       </div>
@@ -157,10 +162,11 @@
         <div><kbd>&larr;</kbd> <kbd>&rarr;</kbd> Move</div>
         <div><kbd>&darr;</kbd> Soft drop</div>
         <div><kbd>Space</kbd> Hard drop</div>
-        <div><kbd>&uarr;</kbd> / <kbd>R</kbd> Rotate CW · <kbd>Z</kbd> Rotate CCW</div>
-        <div><kbd>C</kbd> Hold piece</div>
-        <div><kbd>F</kbd> Wave speed</div>
-        <div><kbd>P</kbd> Pause</div>
+        <div><kbd>&uarr;</kbd> / <kbd>W</kbd> / <kbd>R</kbd> Rotate CW · <kbd>Z</kbd> Rotate CCW</div>
+        <div><kbd>C</kbd> Hold piece · tap Hold preview</div>
+        <div><kbd>F</kbd> Wave speed · tap Wave Speed stat</div>
+        <div><kbd>P</kbd> Pause · tap Pause stat</div>
+        <div>Controller: D-pad / stick move · <kbd>A</kbd> drop · <kbd>X</kbd> hold · <kbd>Y</kbd>/<kbd>B</kbd> rotate · Start pause · Back speed</div>
       </div>
       <div class="muted">Click damaged block to repair (10 pts/HP × rarity; base heals at 4×).</div>
       <div class="controls-touch-hint muted">Swipe on the board: left / right to move, up to rotate, down to drop. Long-press to hold. Tap a damaged cell to repair.</div>
@@ -171,7 +177,7 @@
     <h2 class="hud-mobile-panel-title">Controls &amp; How to Play</h2>
     <div class="controls-keyboard controls-keyboard-compact">
       <div><kbd>&larr;</kbd> <kbd>&rarr;</kbd> Move · <kbd>&darr;</kbd> Soft drop · <kbd>Space</kbd> Hard drop</div>
-      <div><kbd>&uarr;</kbd> / <kbd>R</kbd> Rotate · <kbd>C</kbd> Hold · <kbd>F</kbd> Wave speed · <kbd>P</kbd> Pause</div>
+      <div><kbd>&uarr;</kbd> / <kbd>W</kbd> / <kbd>R</kbd> Rotate · <kbd>C</kbd> Hold · <kbd>F</kbd> Wave speed · <kbd>P</kbd> Pause · tap HUD labels</div>
     </div>
     <p class="controls-touch-hint muted">Touch: swipe left / right to move, <strong>up to rotate</strong>, <strong>down to drop</strong>. <strong>Long-press</strong> to hold. Tap a damaged cell to repair. Leaving the Game tab pauses the run.</p>
     <div id="hud-help-body" class="help-body hud-help-scroll"></div>
@@ -205,7 +211,7 @@
 </div>
 
 <footer id="ad-banner" aria-label="Advertisement">
-  <div id="ad-slot" class="ad-slot"></div>
+  <div id="ad-slot" class="ad-slot" data-ad-slot=""></div>
   <p class="ad-legal muted"><a href="privacy.html">Privacy</a></p>
 </footer>
 </div>
@@ -289,8 +295,9 @@
         <h3>Controls</h3>
         <ul>
           <li><kbd>←</kbd> <kbd>→</kbd> move · <kbd>↓</kbd> soft drop · <kbd>Space</kbd> hard drop</li>
-          <li><kbd>↑</kbd> / <kbd>R</kbd> rotate CW · <kbd>Z</kbd> rotate CCW · <kbd>C</kbd> hold</li>
-          <li><kbd>F</kbd> cycle wave speed (during waves) · <kbd>P</kbd> pause</li>
+          <li><kbd>↑</kbd> / <kbd>W</kbd> / <kbd>R</kbd> rotate CW · <kbd>Z</kbd> rotate CCW · <kbd>C</kbd> hold</li>
+          <li><kbd>F</kbd> cycle wave speed (during waves) · <kbd>P</kbd> pause · tap Hold / Wave Speed / Pause in the HUD</li>
+          <li><strong>Controller:</strong> D-pad or left stick to move · A hard drop · X hold · Y / B rotate · Start pause · Back wave speed</li>
           <li><strong>Touch:</strong> swipe left / right to move, up to rotate, down to drop; long-press to hold; tap a damaged cell to repair.</li>
         </ul>
       </section>
@@ -346,7 +353,7 @@
       </section>
       <section>
         <h3>Line clears &amp; repair</h3>
-        <p>Full rows clear for bonus points but <strong>destroy towers</strong> in those rows (cards stay in your deck).</p>
+        <p>Full rows clear for bonus points but <strong>destroy towers</strong> in those rows (cards stay in your deck). Bonuses scale with <strong>speed tier</strong> (same tiers as faster piece drops): 50 / 150 / 250 / 400 at tier 1, up to ~8× at max speed for quads.</p>
         <p>During build, click a damaged cell to fully repair it:</p>
         <ul>
           <li><strong>Towers</strong> — 10 pts per missing HP, multiplied by rarity (common ×1, uncommon ×1.3, rare ×1.6, epic ×2.2, legendary ×3)</li>
@@ -422,9 +429,9 @@
   </div>
 </div>
 
-<script src="js/platform.js?v=39"></script>
+<script src="js/platform.js?v=40"></script>
 <script src="js/config.js?v=33"></script>
-<script src="js/settings.js?v=43"></script>
+<script src="js/settings.js?v=44"></script>
 <script src="js/seed.js?v=31"></script>
 <script src="js/audio.js?v=31"></script>
 <script src="js/stats.js?v=45"></script>
@@ -439,18 +446,18 @@
 <script src="js/pieces.js?v=31"></script>
 <script src="js/pathfinding.js?v=31"></script>
 <script src="js/projectiles.js?v=31"></script>
-<script src="js/enemies.js?v=31"></script>
+<script src="js/enemies.js?v=32"></script>
 <script src="js/towers.js?v=31"></script>
 <script src="js/waves.js?v=31"></script>
 <script src="js/tutorial.js?v=3"></script>
-<script src="js/ui.js?v=52"></script>
-<script src="js/input.js?v=42"></script>
+<script src="js/ui.js?v=55"></script>
+<script src="js/input.js?v=45"></script>
 <script src="js/sprites.js?v=32"></script>
 <script src="js/render.js?v=31"></script>
-<script src="js/game.js?v=47"></script>
+<script src="js/game.js?v=50"></script>
 <script src="js/starfield.js?v=31"></script>
 <script src="js/main.js?v=41"></script>
-<script src="js/ads.js?v=31"></script>
+<script src="js/ads.js?v=32"></script>
 <script>
   (function () {
     if (typeof Platform !== 'undefined' && !Platform.hasAds) {

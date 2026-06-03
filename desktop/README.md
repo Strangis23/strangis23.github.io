@@ -7,6 +7,7 @@ Electron wrapper for Windows and Linux (Steam Deck) builds.
 - Node.js 20+
 - Steam client (for local Steam API testing)
 - Steamworks partner account and App ID (use `480` / Spacewar for dev)
+- ImageMagick (`magick` or `convert`) optional — icons fall back to Node script
 
 ## Development
 
@@ -21,40 +22,54 @@ Environment variables:
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `STEAM_APP_ID` | `480` | Steam App ID |
-| `SWD_REQUIRE_STEAM` | off | Exit if Steam API fails to init |
+| `SWD_REQUIRE_STEAM` | off (dev) / **on** (packaged) | Exit if Steam API fails to init |
 | `SWD_DEVTOOLS` | off | Open Chromium DevTools |
-| `SWD_ALLOW_RESIZE` | off | Allow window resizing (dev only; shipping builds are fixed **1280×800**) |
+| `SWD_ALLOW_RESIZE` | off | Allow resizing **packaged** window (dev/testing) |
+| `SWD_FIXED_WINDOW` | off | Lock size during **unpackaged** `npm start` |
+| `SWD_REQUIRE_STEAM=0` | — | Packaged build: run without Steam (testing only) |
+
+Copy [`.env.example`](../.env.example) for Steam upload credentials.
 
 ## Window size
 
-Windows and Linux builds use a **fixed 1280×800** client area (Steam Deck landscape). The window is not resizable unless `SWD_ALLOW_RESIZE=1`. Edit [`window-config.js`](window-config.js) to change the size.
+Shipping builds use a **fixed 1280×800** client area (Steam Deck landscape). Unpackaged dev is resizable unless `SWD_FIXED_WINDOW=1`. Packaged builds are fixed unless `SWD_ALLOW_RESIZE=1`. Edit [`window-config.js`](window-config.js) to change dimensions.
+
+## Icons
+
+```bash
+npm run icons   # build/icon.png + icon.ico from build/icon.svg
+```
+
+Icons are generated automatically before `npm run build`.
 
 ## Production builds
 
 ```bash
 cd desktop
-npm run build        # Windows + Linux
+npm run build:release   # Windows zip + Linux tar.gz (Steam depot layout)
 npm run build:win
 npm run build:linux
 ```
 
 Output: `desktop/dist/`
 
-Copy build artifacts into `steam/content/windows/` and `steam/content/linux/` before SteamPipe upload.
+### Stage and upload to Steam
+
+```bash
+npm run steam:ship      # build:release + copy into steam/content/
+# Configure steam/content/*.vdf (see ../steam/SETUP.md)
+SWD_STEAM_USER=... SWD_STEAM_PASS=... npm run steam:upload
+```
+
+`stage-steam-content.sh` puts:
+
+- **Windows** — unpacked zip under `steam/content/windows/`
+- **Linux** — `linux-unpacked` tree only (executable `stackwave-defense`), not AppImage
 
 ## Steamworks setup
 
-1. Copy `steam/content/app_build.vdf.example` → `app_build.vdf` and set App/depot IDs.
-2. Define achievements from [`steam/achievements.json`](../steam/achievements.json) in the partner dashboard.
-3. Enable Steam Cloud with root `SWD` and files matching keys in `achievements.json` → `cloudFiles`.
-4. Upload: `SWD_STEAM_USER=... SWD_STEAM_PASS=... npm run steam:upload`
+See [`../steam/SETUP.md`](../steam/SETUP.md) for App ID, achievements, cloud, and launch options.
 
 ## QA checklist (Steam Deck)
 
-- [ ] Launch only through Steam (`SWD_REQUIRE_STEAM=1` in shipping build)
-- [ ] 1280×800 layout: HUD readable, canvas scales (`styles.css` `.platform-steam` rules)
-- [ ] Steam Overlay (Shift+Tab) does not break keyboard input after closing
-- [ ] Achievements unlock on partner test account
-- [ ] Cloud save restores after deleting local profile / reinstall
-- [ ] Offline: no CDN/ad network errors; bundled fonts load
-- [ ] Touchscreen / Deck controls optional via HUD Pad toggle
+Use [`QA.md`](QA.md) before submitting a build.

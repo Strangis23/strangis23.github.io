@@ -56,9 +56,9 @@ rm -f "$WEB_ZIP"
 (
   cd "$ROOT"
   zip -rq "$WEB_ZIP" \
-    index.html highscores.html privacy.html styles.css manifest.json sw.js \
+    index.html highscores.html privacy.html styles.css manifest.json sw.js ads.txt \
     js assets audio steam_appid.txt \
-    -x "*.DS_Store" "*/.*"
+    -x "*.DS_Store" "*/.*" "desktop/*" "steam/content/windows/*" "steam/content/linux/*"
 )
 
 python3 - "$DL/manifest.json" "$VERSION" "$BRANCH" <<'PY'

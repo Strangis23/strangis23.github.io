@@ -7,7 +7,7 @@ cd desktop
 STEAM_APP_ID=480 npm run start:steam
 ```
 
-For shipping builds, set `SWD_REQUIRE_STEAM=1` and your real App ID.
+Packaged builds require Steam by default. Set your real App ID in `steam_appid.txt` and `steam/content/app_build.vdf` (see `../steam/SETUP.md`). Dev uses `480` (Spacewar).
 
 ## Display (1280×800 fixed)
 
@@ -19,6 +19,8 @@ Shipping Windows/Linux builds use a **non-resizable 1280×800** window. Verify:
 ## Input
 
 - [ ] Keyboard controls work (arrows, rotate, hold, pause)
+- [ ] Gamepad controls work (D-pad/stick move, A drop, X hold, Y/B rotate, Start pause, Back wave speed)
+- [ ] HUD tap targets: Hold preview, Wave Speed stat, Pause stat
 - [ ] Steam Overlay (Shift+Tab) opens and closes; input works afterward
 - [ ] Optional: enable HUD **Pad** for touch / Deck touchscreen
 

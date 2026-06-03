@@ -175,6 +175,14 @@
   }
 
   if (isSteam) {
-    syncFromCloud().catch(() => {});
+    syncFromCloud()
+      .then(() => {
+        if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
+        if (typeof loadSettings === 'function') loadSettings();
+        if (typeof applySettingsToForm === 'function') applySettingsToForm();
+        if (typeof AudioEngine !== 'undefined') AudioEngine.applyVolumes();
+        window.dispatchEvent(new CustomEvent('ttd-settings-changed'));
+      })
+      .catch(() => {});
   }
 })();

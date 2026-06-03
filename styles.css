@@ -650,6 +650,39 @@ strong {
   font-variant-numeric: tabular-nums;
 }
 
+.hud-tap-action {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  border-radius: 6px;
+  margin: 0 -4px;
+  padding: 4px;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.hud-tap-action:hover:not([aria-disabled="true"]) {
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.hud-tap-action:active:not([aria-disabled="true"]) {
+  background: rgba(34, 211, 238, 0.18);
+}
+
+.hud-tap-action[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.preview-block.hud-tap-action {
+  margin: 0;
+  padding: 8px;
+}
+
+.preview-block.hud-tap-action canvas {
+  pointer-events: none;
+}
+
 .controls-touch-hint {
   display: none;
   margin-top: 6px;
@@ -1810,7 +1843,7 @@ body.legal-page-body #app-shell {
 
 .shop-offer-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
   gap: 8px;
 }
 
@@ -2031,10 +2064,10 @@ body.legal-page-body #app-shell {
 
 .card-tile .card-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 8px 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  padding: 7px 7px 5px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.25), transparent 80%),
@@ -2042,19 +2075,24 @@ body.legal-page-body #app-shell {
 }
 
 .card-tile .card-name {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.02em;
-  line-height: 1.2;
+  line-height: 1.25;
   color: var(--text);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-word;
+  min-width: 0;
 }
 
 .card-tile .card-badges {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
   flex-shrink: 0;
 }
@@ -2385,7 +2423,9 @@ body.legal-page-body #app-shell {
 }
 
 .card-tile-compact .card-name {
-  font-size: 8px;
+  font-size: 9px;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .card-tile-compact .shape-badge {
@@ -3354,7 +3394,7 @@ body.legal-page-body #app-shell {
 }
 
 .platform-fixed-window .shop-offer-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
 }
 
 .platform-fixed-window .shop-deck-grid {

@@ -1,3 +1,6 @@
+# Local Pages preview
+_site/
+
 # Dependencies
 desktop/node_modules/
 
@@ -12,6 +15,9 @@ steam/content/linux/
 steam/content/app_build.vdf
 steam/content/depot_build_win.vdf
 steam/content/depot_build_linux.vdf
+
+# SteamPipe build logs / output
+steam/output/
 
 # Secrets
 .env
